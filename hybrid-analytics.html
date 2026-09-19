@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hybrid Shadow Strategy Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #0a0e27;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #9c27b0;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    
+    .subtitle {
+      color: #9e9e9e;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .controls {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    label {
+      font-size: 12px;
+      color: #9e9e9e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    input, select, button {
+      padding: 8px 12px;
+      background: #252b45;
+      border: 1px solid #3a3f5a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #9c27b0;
+    }
+    
+    button {
+      background: #9c27b0;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 8px 20px;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #7b1fa2;
+    }
+    
+    .status-banner {
+      background: #1a1f3a;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #9c27b0;
+    }
+    
+    .status-banner.disabled {
+      border-left-color: #616161;
+      color: #9e9e9e;
+    }
+    
+    .summary {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #9c27b0;
+      margin-bottom: 5px;
+    }
+    
+    .stat-value.positive {
+      color: #4caf50;
+    }
+    
+    .stat-value.negative {
+      color: #f44336;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #9e9e9e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .section {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      color: #9c27b0;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #3a3f5a;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    
+    th {
+      text-align: left;
+      padding: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #9e9e9e;
+      border-bottom: 1px solid #3a3f5a;
+      position: sticky;
+      top: 0;
+      background: #1a1f3a;
+    }
+    
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #252b45;
+    }
+    
+    tr:hover {
+      background: #252b45;
+    }
+    
+    .number {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .positive {
+      color: #4caf50;
+    }
+    
+    .negative {
+      color: #f44336;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge-success { background: #4caf50; color: #fff; }
+    .badge-danger { background: #f44336; color: #fff; }
+    .badge-warning { background: #ff9800; color: #fff; }
+    .badge-info { background: #2196f3; color: #fff; }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 20px;
+    }
+    
+    .chart-container-large {
+      position: relative;
+      height: 400px;
+      margin-top: 20px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #9e9e9e;
+    }
+    
+    .error {
+      background: #f44336;
+      color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .trades-table-container {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hybrid Shadow Strategy Analytics</h1>
+    <p class="subtitle">Real-time performance tracking for hybrid ML strategy (shadow mode)</p>
+    
+    <div id="statusBanner" class="status-banner">
+      <div class="loading">Loading status...</div>
+    </div>
+    
+    <div class="controls">
+      <div class="control-group">
+        <label>Days</label>
+        <select id="daysSelect">
+          <option value="7">Last 7 Days</option>
+          <option value="14">Last 14 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="60">Last 60 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="365">Last 365 Days</option>
+        </select>
+      </div>
+      <button onclick="loadData()">Refresh</button>
+    </div>
+    
+    <div id="summary" class="summary">
+      <div class="loading">Loading summary...</div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Trade History</div>
+      <div id="tradesTable">
+        <div class="loading">Loading trades...</div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Performance Charts</div>
+      <div class="chart-container-large">
+        <canvas id="cumulativeChart"></canvas>
+      </div>
+      <div class="chart-container-large">
+        <canvas id="divergenceChart"></canvas>
+      </div>
+      <div class="chart-container-large">
+        <canvas id="tradesPerDayChart"></canvas>
+      </div>
+      <div class="chart-container-large">
+        <canvas id="scansPerHourChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="tradePnlChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="bucketsChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Decision Funnel</div>
+      <div id="funnelTable">
+        <div class="loading">Loading funnel data...</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="funnelChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">API Request Statistics</div>
+      <div id="apiStatsTable">
+        <div class="loading">Loading API statistics...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let cumulativeChart = null;
+    let divergenceChart = null;
+    let tradesPerDayChart = null;
+    let scansPerHourChart = null;
+    let tradePnlChart = null;
+    let bucketsChart = null;
+    let funnelChart = null;
+
+    async function loadData() {
+      const days = document.getElementById('daysSelect').value;
+      
+      try {
+        // Check status
+        const statusResponse = await fetch(`${API_BASE}/api/hybrid/stats`);
+        const statusData = await statusResponse.json();
+        
+        const statusBanner = document.getElementById('statusBanner');
+        if (!statusData.enabled) {
+          statusBanner.className = 'status-banner disabled';
+          statusBanner.innerHTML = `
+            <strong>Shadow Mode: DISABLED</strong><br>
+            <small>Enable shadow mode in the code to start tracking hybrid strategy decisions.</small>
+          `;
+          document.getElementById('summary').innerHTML = '<div class="error">Shadow mode is disabled. No data available.</div>';
+          return;
+        }
+        
+        statusBanner.className = 'status-banner';
+        const isRealTrading = statusData.realTrading || false;
+        statusBanner.innerHTML = `
+          <strong>Shadow Mode: ENABLED</strong> | <strong>Trading Mode: ${isRealTrading ? '<span style="color: #4caf50;">REAL TRADING</span>' : '<span style="color: #ff9800;">PAPER TRADING</span>'}</strong><br>
+          <small>${isRealTrading ? 'Executing real Solana swaps on blockchain' : 'Simulating trades in parallel with main strategy'}</small>
+        `;
+        
+        // Load stats, trades, funnel, scans, and API request stats
+        const [statsResponse, tradesResponse, funnelResponse, scansResponse, codexResponse, rpcResponse, jupiterResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/hybrid/stats`),
+          fetch(`${API_BASE}/api/hybrid/trades?days=${days}`),
+          fetch(`${API_BASE}/api/hybrid/funnel?days=${days}`),
+          fetch(`${API_BASE}/api/scans?days=${days}`).catch(() => ({ json: () => ({ data: [] }) })),
+          fetch(`${API_BASE}/api/codex-requests?minutes=60`).catch(() => ({ json: () => ({ daily_estimate: null, hourly_rate: null, total: 0, byType: {}, batched: 0, individual: 0, candles: 0, tokensFetched: 0, clientErrors4xx: 0, clientErrors4xxPct: 0, serverErrors5xx: 0, serverErrors5xxPct: 0, rateLimited: 0, rateLimitedPct: 0, successRate: 0 }) })),
+          fetch(`${API_BASE}/api/rpc-requests?minutes=60`).catch(() => ({ json: () => ({ daily_estimate: null, hourly_rate: null, total: 0, byMethod: {}, clientErrors4xx: 0, clientErrors4xxPct: 0, serverErrors5xx: 0, serverErrors5xxPct: 0, rateLimited: 0, rateLimitedPct: 0, successRate: 0 }) })),
+          fetch(`${API_BASE}/api/jupiter-requests?minutes=60`).catch(() => ({ json: () => ({ daily_estimate: null, hourly_rate: null, total: 0, rateLimited: 0, rateLimitedPct: 0, clientErrors4xx: 0, clientErrors4xxPct: 0, serverErrors5xx: 0, serverErrors5xxPct: 0, successRate: 0, byEndpoint: {}, byStatusCode: {} }) }))
+        ]);
+
+        const stats = await statsResponse.json();
+        const tradesData = await tradesResponse.json();
+        const funnel = await funnelResponse.json();
+        const scansData = await scansResponse.json();
+        const codexData = await codexResponse.json();
+        const rpcData = await rpcResponse.json();
+        const jupiterData = await jupiterResponse.json();
+        
+        if (!stats || !stats.enabled) {
+          throw new Error('Shadow mode is disabled or stats unavailable');
+        }
+        
+        const trades = (tradesData && tradesData.data) ? tradesData.data : [];
+        
+        // Render with safe defaults
+        renderSummary(stats || {});
+        renderTradesTable(trades, isRealTrading);
+        renderCharts(trades);
+        renderScansPerHourChart((scansData && scansData.data) ? scansData.data : [], parseInt(days) || 7);
+        renderFunnelTable(funnel || {});
+        renderFunnelChart(funnel || {});
+        renderApiStats(codexData, rpcData, jupiterData);
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('summary').innerHTML = `<div class="error">Error loading data: ${error.message}</div>`;
+      }
+    }
+
+    function renderSummary(stats) {
+      const summary = document.getElementById('summary');
+      const safeNumber = (val, decimals = 2) => (val != null && !isNaN(val)) ? val.toFixed(decimals) : '0.00';
+      const safePercent = (val) => (val != null && !isNaN(val)) ? val.toFixed(1) : '0.0';
+      
+      summary.innerHTML = `
+        <div class="stat">
+          <div class="stat-value">${stats.totalTrades || 0}</div>
+          <div class="stat-label">Total Trades</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.activeTrades || 0}</div>
+          <div class="stat-label">Active Trades</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${safePercent(stats.winRate)}%</div>
+          <div class="stat-label">Win Rate</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value ${(stats.totalPnlUsd || 0) >= 0 ? 'positive' : 'negative'}">
+            ${(stats.totalPnlUsd || 0) >= 0 ? '+' : ''}$${safeNumber(stats.totalPnlUsd)}
+          </div>
+          <div class="stat-label">Total P&L</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value ${(stats.avgReturnPct || 0) >= 0 ? 'positive' : 'negative'}">
+            ${(stats.avgReturnPct || 0) >= 0 ? '+' : ''}${safeNumber(stats.avgReturnPct)}%
+          </div>
+          <div class="stat-label">Avg Return</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${safeNumber(stats.profitFactor)}</div>
+          <div class="stat-label">Profit Factor</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">$${safeNumber(stats.currentBalance)}</div>
+          <div class="stat-label">Current Balance</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.wins || 0}/${stats.losses || 0}</div>
+          <div class="stat-label">Wins / Losses</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.tradingDays || 0}</div>
+          <div class="stat-label">Trading Days</div>
+        </div>
+        ${stats.realTrading ? `
+          <div class="stat">
+            <div class="stat-value" style="color: #4caf50;">REAL</div>
+            <div class="stat-label">Trading Mode</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value ${(stats.realTotalPnlUsd || 0) >= 0 ? 'positive' : 'negative'}">
+              ${(stats.realTotalPnlUsd || 0) >= 0 ? '+' : ''}$${safeNumber(stats.realTotalPnlUsd)}
+            </div>
+            <div class="stat-label">Real P&L (Exec)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value ${(stats.realAvgReturnPct || 0) >= 0 ? 'positive' : 'negative'}">
+              ${(stats.realAvgReturnPct || 0) >= 0 ? '+' : ''}${safeNumber(stats.realAvgReturnPct)}%
+            </div>
+            <div class="stat-label">Real Avg Return</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">${safeNumber(stats.realProfitFactor)}</div>
+            <div class="stat-label">Real Profit Factor</div>
+          </div>
+        ` : `
+          <div class="stat">
+            <div class="stat-value" style="color: #ff9800;">PAPER</div>
+            <div class="stat-label">Trading Mode</div>
+          </div>
+        `}
+      `;
+    }
+
+    function renderTradesTable(trades, isRealTrading = false) {
+      const table = document.getElementById('tradesTable');
+      if (!trades || trades.length === 0) {
+        table.innerHTML = '<div class="loading">No trades found</div>';
+        return;
+      }
+      
+      const safeNumber = (val, decimals = 8) => (val != null && !isNaN(val)) ? val.toFixed(decimals) : '-';
+      const safePercent = (val) => (val != null && !isNaN(val)) ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%` : '-';
+      const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      };
+      const formatHoldDuration = (minutes) => {
+        if (minutes === null || minutes === undefined) return '-';
+        return `${Math.round(minutes)}m`;
+      };
+      const formatExitReason = (reason, trade) => {
+        if (!reason) return '-';
+        
+        // Check if this is a real trading trade with missing exit transaction
+        // This handles old trades where exit failed but reason wasn't updated
+        const hasEntryTx = !!(trade?.txHash || trade?.entryTxHash);
+        const hasExitTx = !!trade?.exitTxHash;
+        const isRealTrading = hasEntryTx; // If there's an entry tx, it's real trading
+        const isClosed = trade?.status === 'closed';
+        const missingExitTx = isRealTrading && isClosed && !hasExitTx;
+        
+        // If real trading but no exit tx, the exit likely failed
+        if (missingExitTx && !reason.includes('exit_failed') && !reason.includes('buy_failed')) {
+          // Override reason to indicate exit failed
+          reason = 'exit_failed_missing_tx';
+        }
+        
+        // Extract ATA status if present (only relevant for real trades that were entered)
+        const hasAtaReturned = reason.includes('_ata_returned');
+        const hasAtaNotReturned = reason.includes('_ata_not_returned');
+        let baseReason = reason
+          .replace('_ata_returned', '')
+          .replace('_ata_not_returned', '');
+        
+        // Format ATA status suffix (only show for real trades that were actually entered)
+        let ataSuffix = '';
+        if (isRealTrading) {
+          if (hasAtaReturned) {
+            ataSuffix = ' · ATA Returned';
+          } else if (hasAtaNotReturned) {
+            ataSuffix = ' · ATA Not Returned';
+          }
+        }
+        
+        // Simplified: Extract and show only the essential reason
+        // Priority: entry failures > exit failures > buy failures > timed exits
+        
+        // Check for entry failures (highest priority)
+        // Note: Entry failures happen BEFORE entry, so no ATA exists - don't show ATA suffix
+        if (baseReason.includes('entry_failed_')) {
+          const entryFailedIndex = baseReason.indexOf('entry_failed_');
+          let issuePart = baseReason.substring(entryFailedIndex);
+          // Remove any trailing modifiers
+          issuePart = issuePart.split('_no_codex_exit')[0];
+          const failureReason = issuePart.replace('entry_failed_', '');
+          
+          // Format specific known failure types (no ATA suffix for entry failures)
+          if (failureReason === 'codex_price_impact') return 'Entry Failed (Codex Price Impact)';
+          if (failureReason === 'scan_price_impact') return 'Entry Failed (Scan Price Impact)';
+          // Generic format for other failure reasons
+          return `Entry Failed (${failureReason})`;
+        }
+        
+        // Check for exit failures
+        // Note: Exit failures mean swap didn't happen, so ATA wasn't returned - don't show ATA suffix
+        if (baseReason.includes('exit_failed_insufficient_liquidity')) return 'Exit Failed (Insufficient Liquidity)';
+        if (baseReason.includes('exit_failed_exception')) return 'Exit Failed (Exception)';
+        if (baseReason.includes('exit_failed_missing_tx')) return 'Exit Failed (No Exit TX)';
+        if (baseReason.includes('exit_failed')) return 'Exit Failed (Cannot Sell)';
+        
+        // Check for buy failures
+        // Note: Buy failures mean entry didn't happen, so no ATA exists - don't show ATA suffix
+        if (baseReason.includes('buy_failed')) return 'Buy Failed (No Tokens)';
+        
+        // Check for other failure types
+        if (baseReason === 'cannot_sell_stuck') return 'Cannot Sell (Stuck Tokens)';
+        
+        // For timed exits without other issues, show just "Timed Exit" (simplified)
+        if (baseReason.startsWith('timed_')) {
+          return 'Timed Exit' + ataSuffix;
+        }
+        
+        // Regular paper trading exit reasons
+        if (baseReason === 'stop_loss') return 'Stop Loss' + ataSuffix;
+        if (baseReason === 'take_profit_1') return 'Take Profit 1' + ataSuffix;
+        if (baseReason === 'take_profit_2') return 'Take Profit 2' + ataSuffix;
+        if (baseReason === 'take_profit_3') return 'Take Profit 3' + ataSuffix;
+        if (baseReason === 'timed_exit') return 'Timed Exit' + ataSuffix;
+        if (baseReason === 'time_based') return 'Time Based Exit' + ataSuffix;
+        if (baseReason === 'manual') return 'Manual Exit' + ataSuffix;
+        
+        // Fallback: return as-is if not recognized
+        return reason;
+      };
+      const formatImpact = (base, real) => {
+        if (base == null || real == null || isNaN(base) || isNaN(real) || base === 0) return '-';
+        const impact = ((real - base) / base) * 100;
+        const sign = impact >= 0 ? '+' : '';
+        return `${sign}${impact.toFixed(2)}%`;
+      };
+      // Calculate quote price from Jupiter quote data using ACTUAL decimals
+      // For entry: inAmount = SOL lamports, outAmount = tokens with decimals
+      // For exit: inAmount = tokens with decimals, outAmount = SOL lamports
+      const calculateQuotePrice = (inAmount, outAmount, inputDecimals, outputDecimals, isExit = false, solPriceUsd = 140) => {
+        // Early return if amounts are missing (no quote available)
+        if (!inAmount || !outAmount) return null;
+        
+        // Require actual decimals - no guessing!
+        if (inputDecimals == null || outputDecimals == null || isNaN(inputDecimals) || isNaN(outputDecimals)) {
+          // Only warn if we have amounts but missing decimals (data issue)
+          if (inAmount && outAmount) {
+            console.warn('Missing decimals for quote price calculation - cannot calculate without actual decimals', {
+              inAmount,
+              outAmount,
+              inputDecimals,
+              outputDecimals
+            });
+          }
+          return null;
+        }
+        
+        try {
+          if (isExit) {
+            // Exit: tokens in, SOL out
+            const tokensIn = parseFloat(inAmount) / Math.pow(10, inputDecimals);
+            const solOut = parseFloat(outAmount) / Math.pow(10, outputDecimals);
+            
+            if (tokensIn === 0 || solOut === 0) return null;
+            
+            const usdOut = solOut * solPriceUsd;
+            return usdOut / tokensIn; // USD per token
+          } else {
+            // Entry: SOL in, tokens out
+            const solIn = parseFloat(inAmount) / Math.pow(10, inputDecimals);
+            const tokensOut = parseFloat(outAmount) / Math.pow(10, outputDecimals);
+            
+            if (solIn === 0 || tokensOut === 0) return null;
+            
+            const usdIn = solIn * solPriceUsd;
+            return usdIn / tokensOut; // USD per token
+          }
+        } catch (e) {
+          console.error('Error calculating quote price:', e);
+          return null;
+        }
+      };
+      
+      table.innerHTML = `
+        <div class="trades-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Token Address</th>
+                <th>Scan ID</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th class="number">Entry Price</th>
+                <th class="number">Exit Price</th>
+                <th class="number">Position</th>
+                <th class="number">P&L %</th>
+                <th class="number">P&L USD</th>
+                <th class="number">Real Entry</th>
+                <th class="number">Real Exit</th>
+                <th class="number">Real Position</th>
+                <th class="number">Real P&L %</th>
+                <th class="number">Real P&L USD</th>
+                <th>Status</th>
+                <th>Exit Reason</th>
+                <th>Entry TX</th>
+                <th>Exit TX</th>
+                <th>Hold Duration</th>
+                <th class="number">Entry Impact</th>
+                <th class="number">Exit Impact</th>
+                <th class="number">Quote Entry</th>
+                <th class="number">Quote Impact Entry</th>
+                <th class="number">Quote Exit</th>
+                <th class="number">Quote Impact Exit</th>
+                <th class="number">Entry Prob</th>
+                <th class="number">Crash Pred</th>
+                <th class="number">Upside Pred</th>
+                <th class="number">Regime Prob</th>
+                <th class="number">p_tail</th>
+                <th>Model</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${trades.map(trade => {
+                const pnlPct = trade.pnlPct;
+                const pnlUsd = trade.pnlUsd;
+                const pnlPctClass = pnlPct != null ? (pnlPct >= 0 ? 'positive' : 'negative') : '';
+                const pnlUsdClass = pnlUsd != null ? (pnlUsd >= 0 ? 'positive' : 'negative') : '';
+                const realPnlPct = trade.realPnlPct;
+                const realPnlUsd = trade.realPnlUsd;
+                const realPnlPctClass = realPnlPct != null ? (realPnlPct >= 0 ? 'positive' : 'negative') : '';
+                const realPnlUsdClass = realPnlUsd != null ? (realPnlUsd >= 0 ? 'positive' : 'negative') : '';
+                const pTail = trade.pTail;
+                
+                // Determine if closed badge should be green (success)
+                // Paper trading only: green if closed AND paper trading in profit
+                // Real trading enabled: green if closed AND real trading in profit AND both transactions succeeded
+                let isClosedSuccess = false;
+                if (trade.status === 'closed') {
+                  if (!isRealTrading) {
+                    // Paper trading only: green if paper trading closed in profit
+                    const paperInProfit = (pnlPct != null && pnlPct >= 0) || (pnlUsd != null && pnlUsd >= 0);
+                    isClosedSuccess = paperInProfit;
+                  } else {
+                    // Real trading enabled: green if both transactions succeeded AND real trading in profit
+                    const entryTxSucceeded = !!(trade.txHash || trade.entryTxHash);
+                    const exitTxSucceeded = !!trade.exitTxHash;
+                    // Also check if real prices exist as alternative indicator
+                    const realTradingHappened = (trade.realEntryPrice != null && trade.realExitPrice != null);
+                    const bothTransactionsSucceeded = (entryTxSucceeded && exitTxSucceeded) || realTradingHappened;
+                    
+                    // Check if real trading closed in profit (not paper)
+                    const realInProfit = (realPnlPct != null && realPnlPct >= 0) || (realPnlUsd != null && realPnlUsd >= 0);
+                    
+                    isClosedSuccess = realInProfit && bothTransactionsSucceeded;
+                  }
+                }
+                
+                const statusBadge = trade.status === 'closed' 
+                  ? (isClosedSuccess 
+                      ? `<span class="badge badge-success">CLOSED</span>`
+                      : `<span class="badge badge-danger">CLOSED</span>`)
+                  : `<span class="badge badge-info">OPEN</span>`;
+                
+                // Generate DexScreener URL (assuming solana chain for hybrid trades)
+                const dexscreenerUrl = `https://dexscreener.com/solana/${trade.tokenAddress}`;
+                
+                // Format transaction hash with Solscan link
+                const formatTxHash = (txHash) => {
+                  if (!txHash) return '-';
+                  const shortHash = txHash.substring(0, 8) + '...' + txHash.substring(txHash.length - 8);
+                  const solscanUrl = `https://solscan.io/tx/${txHash}`;
+                  return `<a href="${solscanUrl}" target="_blank" title="View on Solscan" style="color: #4fc3f7; text-decoration: none; font-family: 'Courier New', monospace; font-size: 11px;">${shortHash}</a>`;
+                };
+                
+                return `
+                <tr>
+                  <td><strong>${trade.symbol || 'N/A'}</strong></td>
+                  <td style="font-family: 'Courier New', monospace; font-size: 11px;">
+                    <span style="color: #4fc3f7;">${trade.tokenAddress?.substring(0, 12)}...</span>
+                    <a href="${dexscreenerUrl}" target="_blank" title="Open in DexScreener" style="color: #4fc3f7; text-decoration: none; font-size: 14px; margin-left: 4px;">🔗</a>
+                  </td>
+                  <td>${trade.scanId || '-'}</td>
+                  <td>${formatDate(trade.entryTimestamp)}</td>
+                  <td>${formatDate(trade.exitTimestamp)}</td>
+                  <td class="number">$${safeNumber(trade.entryPrice)}</td>
+                  <td class="number">${trade.exitPrice != null ? '$' + safeNumber(trade.exitPrice) : '-'}</td>
+                  <td class="number">$${safeNumber(trade.positionUsd, 2)}</td>
+                  <td class="number ${pnlPctClass}">${safePercent(pnlPct)}</td>
+                  <td class="number ${pnlUsdClass}">${pnlUsd != null ? (pnlUsd >= 0 ? '+' : '') + '$' + safeNumber(pnlUsd, 2) : '-'}</td>
+                  <td class="number">${trade.realEntryPrice != null ? '$' + safeNumber(trade.realEntryPrice) : '-'}</td>
+                  <td class="number">${trade.realExitPrice != null ? '$' + safeNumber(trade.realExitPrice) : '-'}</td>
+                  <td class="number">${trade.realPositionUsd != null ? '$' + safeNumber(trade.realPositionUsd, 2) : '-'}</td>
+                  <td class="number ${realPnlPctClass}">${realPnlPct != null ? (realPnlPct >= 0 ? '+' : '') + realPnlPct.toFixed(2) + '%' : '-'}</td>
+                  <td class="number ${realPnlUsdClass}">${realPnlUsd != null ? (realPnlUsd >= 0 ? '+' : '') + '$' + safeNumber(realPnlUsd, 2) : '-'}</td>
+                  <td>${statusBadge}</td>
+                  <td>${formatExitReason(trade.exitReason, trade)}</td>
+                  <td>${formatTxHash(trade.txHash || trade.entryTxHash)}</td>
+                  <td>${formatTxHash(trade.exitTxHash)}</td>
+                  <td>${formatHoldDuration(trade.holdDurationMinutes)}</td>
+                  <td class="number">${formatImpact(trade.entryPrice, trade.realEntryPrice)}</td>
+                  <td class="number">${trade.exitPrice != null && trade.realExitPrice != null ? formatImpact(trade.exitPrice, trade.realExitPrice) : '-'}</td>
+                  ${(() => {
+                    const quoteEntryPrice = calculateQuotePrice(
+                      trade.quoteEntryInAmount, 
+                      trade.quoteEntryOutAmount,
+                      trade.quoteEntryInputDecimals,
+                      trade.quoteEntryOutputDecimals,
+                      false, // isExit
+                      140 // solPriceUsd
+                    );
+                    const quoteExitPrice = calculateQuotePrice(
+                      trade.quoteExitInAmount, 
+                      trade.quoteExitOutAmount,
+                      trade.quoteExitInputDecimals,
+                      trade.quoteExitOutputDecimals,
+                      true, // isExit
+                      140 // solPriceUsd
+                    );
+                    return `
+                      <td class="number">${quoteEntryPrice != null ? '$' + safeNumber(quoteEntryPrice) : '-'}</td>
+                      <td class="number">${quoteEntryPrice != null ? formatImpact(trade.entryPrice, quoteEntryPrice) : '-'}</td>
+                      <td class="number">${quoteExitPrice != null ? '$' + safeNumber(quoteExitPrice) : '-'}</td>
+                      <td class="number">${quoteExitPrice != null && trade.exitPrice != null ? formatImpact(trade.exitPrice, quoteExitPrice) : '-'}</td>
+                    `;
+                  })()}
+                  <td class="number">${trade.entryProb != null ? (trade.entryProb * 100).toFixed(1) + '%' : '-'}</td>
+                  <td class="number">${trade.crashPred != null ? trade.crashPred.toFixed(1) + '%' : '-'}</td>
+                  <td class="number">${trade.upsidePred != null ? trade.upsidePred.toFixed(1) + '%' : '-'}</td>
+                  <td class="number">${trade.regimeProb != null ? (trade.regimeProb * 100).toFixed(1) + '%' : '-'}</td>
+                  <td class="number">${pTail != null ? (pTail * 100).toFixed(1) + '%' : '-'}</td>
+                  <td style="font-size: 11px;">${trade.entryModelVersion || '-'}</td>
+                </tr>
+              `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderCharts(trades) {
+      if (!trades || trades.length === 0) return;
+      
+      // Filter closed trades for charts
+      const closedTrades = trades.filter(t => t.status === 'closed' && t.pnlUsd != null);
+      if (closedTrades.length === 0) return;
+      
+      // Sort by entry timestamp
+      closedTrades.sort((a, b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp));
+      
+      // Calculate cumulative P&L for paper trading
+      let cumulativePnl = 0;
+      const cumulativeData = closedTrades.map(t => {
+        cumulativePnl += t.pnlUsd;
+        return {
+          date: new Date(t.entryTimestamp),
+          pnl: cumulativePnl
+        };
+      });
+      
+      // Calculate cumulative P&L for real trades (using same trades array for alignment)
+      // Only accumulate when realPnlUsd is available, but keep all timestamps aligned
+      let cumulativeRealPnl = 0;
+      const cumulativeRealData = closedTrades.map(t => {
+        // Only add to cumulative if realPnlUsd exists, otherwise keep previous value
+        if (t.realPnlUsd != null && !isNaN(t.realPnlUsd)) {
+          cumulativeRealPnl += t.realPnlUsd;
+        }
+        return {
+          date: new Date(t.entryTimestamp),
+          pnl: cumulativeRealPnl
+        };
+      });
+      
+      // Build market index data aligned with trade timestamps
+      const marketIndexData = closedTrades.map(t => ({
+        date: new Date(t.entryTimestamp),
+        price: t.marketIndex
+      }));
+
+      // Render cumulative P&L chart (with both paper, real, and market index)
+      renderCumulativeChart(cumulativeData, cumulativeRealData, marketIndexData);
+
+      // Render per-trade execution gap with rolling avg (window = selected days)
+      const days = parseInt(document.getElementById('daysSelect').value) || 7;
+      renderDivergenceChart(closedTrades, days);
+
+      // Render trades-per-day bar chart (one bar per calendar day in window)
+      renderTradesPerDayChart(closedTrades, days);
+
+      // Render individual trade P&L chart
+      renderTradePnlChart(closedTrades);
+
+      // Render buckets chart
+      renderBucketsChart(closedTrades);
+    }
+
+    function renderCumulativeChart(data, realData = [], marketIndexData = []) {
+      const ctx = document.getElementById('cumulativeChart').getContext('2d');
+
+      if (cumulativeChart) {
+        cumulativeChart.destroy();
+      }
+
+      // Prepare datasets
+      const datasets = [{
+        label: 'Paper Trading P&L',
+        data: data.map(d => d.pnl),
+        borderColor: '#9c27b0',
+        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+        fill: true,
+        tension: 0.1,
+        yAxisID: 'y'
+      }];
+
+      // Add real trading P&L if available and has actual data
+      if (realData && realData.length > 0) {
+        const realPnlValues = realData.map(d => d.pnl);
+        const hasRealTradingData = realPnlValues.length > 0 &&
+                                   realPnlValues[realPnlValues.length - 1] !== 0;
+        if (hasRealTradingData) {
+          datasets.push({
+            label: 'Real Trading P&L',
+            data: realPnlValues,
+            borderColor: '#4caf50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            fill: true,
+            tension: 0.1,
+            yAxisID: 'y'
+          });
+        }
+      }
+
+      // Add market index (normalized to % change from first value) on secondary axis
+      const hasMarketIndex = marketIndexData && marketIndexData.length > 0 &&
+                             marketIndexData.some(d => d.price != null);
+      if (hasMarketIndex) {
+        const firstPrice = marketIndexData.find(d => d.price != null)?.price || 1;
+        datasets.push({
+          label: 'Market Index',
+          data: marketIndexData.map(d => d.price != null ? ((d.price - firstPrice) / firstPrice * 100) : null),
+          borderColor: 'rgba(255, 193, 7, 0.6)',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+          yAxisID: 'y2'
+        });
+      }
+
+      cumulativeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })),
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#e0e0e0' }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.parsed.y;
+                  if (label === 'Market Index') {
+                    return `${label}: ${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+                  }
+                  return `${label}: $${value.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' }
+            },
+            y: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Cumulative P&L ($)',
+                color: '#9e9e9e'
+              }
+            },
+            y2: {
+              position: 'right',
+              ticks: {
+                color: 'rgba(255, 193, 7, 0.6)',
+                callback: function(value) { return value.toFixed(0) + '%'; }
+              },
+              grid: { display: false },
+              title: {
+                display: true,
+                text: 'Market Index %',
+                color: 'rgba(255, 193, 7, 0.6)'
+              },
+              display: hasMarketIndex
+            }
+          }
+        }
+      });
+    }
+
+    function renderDivergenceChart(trades, days) {
+      const ctx = document.getElementById('divergenceChart').getContext('2d');
+      if (divergenceChart) divergenceChart.destroy();
+
+      const matched = trades.filter(t => t.pnlPct != null && t.realPnlPct != null);
+      if (matched.length < 2) return;
+
+      const gaps = matched.map(t => t.pnlPct - t.realPnlPct);
+
+      // Rolling window = trades within the selected day range
+      // Estimate trades per day from the data, then window = days * trades/day
+      const msRange = new Date(matched[matched.length - 1].entryTimestamp) - new Date(matched[0].entryTimestamp);
+      const totalDays = msRange / (1000 * 60 * 60 * 24) || 1;
+      const tradesPerDay = matched.length / totalDays;
+      const W = Math.max(3, Math.round(days * tradesPerDay));
+
+      const rolling = gaps.map((_, i) => {
+        const start = Math.max(0, i - W + 1);
+        const slice = gaps.slice(start, i + 1);
+        return slice.reduce((a, b) => a + b, 0) / slice.length;
+      });
+
+      const labels = matched.map((t, i) => {
+        const d = new Date(t.entryTimestamp);
+        return (i % Math.max(1, Math.floor(matched.length / 15)) === 0)
+          ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '';
+      });
+
+      divergenceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Per-trade gap (paper% − real%)',
+              data: gaps,
+              backgroundColor: gaps.map(g => g >= 0 ? 'rgba(156, 39, 176, 0.3)' : 'rgba(76, 175, 80, 0.3)'),
+              borderColor: gaps.map(g => g >= 0 ? '#9c27b0' : '#4caf50'),
+              borderWidth: 1,
+              yAxisID: 'y',
+              order: 2
+            },
+            {
+              label: `Rolling avg (${days}d ≈ ${W} trades)`,
+              data: rolling,
+              type: 'line',
+              borderColor: '#ff9800',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.3,
+              fill: false,
+              yAxisID: 'y',
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#e0e0e0', boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              mode: 'index', intersect: false,
+              callbacks: {
+                title: (items) => {
+                  const t = matched[items[0].dataIndex];
+                  return t ? `${t.symbol} — ${new Date(t.entryTimestamp).toLocaleString()}` : '';
+                },
+                label: (c) => `${c.dataset.label}: ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y.toFixed(2)}%`
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#9e9e9e', font: { size: 10 }, maxRotation: 0 }, grid: { display: false } },
+            y: {
+              ticks: { color: '#9e9e9e', callback: v => v.toFixed(1) + '%' },
+              grid: { color: '#252b45' },
+              title: { display: true, text: 'Execution Gap %', color: '#9e9e9e' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTradesPerDayChart(trades, days) {
+      const ctx = document.getElementById('tradesPerDayChart').getContext('2d');
+      if (tradesPerDayChart) tradesPerDayChart.destroy();
+
+      // Build N calendar day buckets ending at today (local time)
+      const dayKey = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const buckets = [];
+      const bucketIndex = new Map();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = dayKey(d);
+        buckets.push({ key, date: d, wins: 0, losses: 0 });
+        bucketIndex.set(key, buckets.length - 1);
+      }
+
+      // Tally paper-side wins/losses per local day
+      trades.forEach(t => {
+        if (t.pnlPct == null || isNaN(t.pnlPct)) return;
+        const key = dayKey(new Date(t.entryTimestamp));
+        const idx = bucketIndex.get(key);
+        if (idx == null) return; // outside window (shouldn't happen — API already filters)
+        if (t.pnlPct >= 0) buckets[idx].wins++;
+        else buckets[idx].losses++;
+      });
+
+      const labels = buckets.map(b => b.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      const wins = buckets.map(b => b.wins);
+      const losses = buckets.map(b => b.losses);
+
+      tradesPerDayChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Wins',
+              data: wins,
+              backgroundColor: 'rgba(76, 175, 80, 0.7)',
+              borderColor: '#4caf50',
+              borderWidth: 1,
+              stack: 'trades'
+            },
+            {
+              label: 'Losses',
+              data: losses,
+              backgroundColor: 'rgba(244, 67, 54, 0.7)',
+              borderColor: '#f44336',
+              borderWidth: 1,
+              stack: 'trades'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#e0e0e0', boxWidth: 12, font: { size: 11 } } },
+            title: {
+              display: true,
+              text: `Trades per day (last ${days}d)`,
+              color: '#e0e0e0',
+              font: { size: 13 }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                footer: (items) => {
+                  const total = items.reduce((a, c) => a + c.parsed.y, 0);
+                  return `Total: ${total} trade${total === 1 ? '' : 's'}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: '#9e9e9e', font: { size: 10 }, maxRotation: 0, autoSkip: true },
+              grid: { display: false }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              ticks: { color: '#9e9e9e', precision: 0, stepSize: 1 },
+              grid: { color: '#252b45' },
+              title: { display: true, text: 'Trades', color: '#9e9e9e' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderScansPerHourChart(scans, days) {
+      const ctx = document.getElementById('scansPerHourChart').getContext('2d');
+      if (scansPerHourChart) scansPerHourChart.destroy();
+
+      // Build N*24 hour buckets ending at the current hour (local time)
+      const hourKey = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0');
+        return `${y}-${m}-${day}T${h}`;
+      };
+
+      const totalHours = days * 24;
+      const now = new Date();
+      now.setMinutes(0, 0, 0);
+
+      const buckets = [];
+      const bucketIndex = new Map();
+      for (let i = totalHours - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setHours(now.getHours() - i);
+        const key = hourKey(d);
+        buckets.push({
+          key,
+          date: d,
+          tokensBySource: {},   // { bonkbot: 12, photon: 8, ... }
+          tokensAnalyzed: 0,
+          durationMs: 0,
+          scanCount: 0
+        });
+        bucketIndex.set(key, buckets.length - 1);
+      }
+
+      // Aggregate scans into their hour bucket
+      const allSources = new Set();
+      scans.forEach(s => {
+        const d = new Date(s.timestamp);
+        const key = hourKey(d);
+        const idx = bucketIndex.get(key);
+        if (idx == null) return;
+        const b = buckets[idx];
+
+        // Per-source token counts (fallback: lump into 'unknown' if breakdown missing)
+        const breakdown = s.bot_tokens_breakdown || {};
+        const keys = Object.keys(breakdown);
+        if (keys.length > 0) {
+          keys.forEach(src => {
+            const count = Number(breakdown[src]) || 0;
+            if (count === 0) return;
+            b.tokensBySource[src] = (b.tokensBySource[src] || 0) + count;
+            allSources.add(src);
+          });
+        } else if (s.tokens_found > 0) {
+          b.tokensBySource['unknown'] = (b.tokensBySource['unknown'] || 0) + (Number(s.tokens_found) || 0);
+          allSources.add('unknown');
+        }
+
+        b.tokensAnalyzed += Number(s.tokens_analyzed) || 0;
+        b.durationMs += Number(s.duration_ms) || 0;
+        b.scanCount += 1;
+      });
+
+      // Stable color per source
+      const sourcePalette = [
+        '#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336',
+        '#00bcd4', '#ffeb3b', '#8bc34a', '#e91e63', '#607d8b'
+      ];
+      const sources = Array.from(allSources).sort();
+      const colorFor = (src) => {
+        let hash = 0;
+        for (let i = 0; i < src.length; i++) hash = (hash * 31 + src.charCodeAt(i)) | 0;
+        return sourcePalette[Math.abs(hash) % sourcePalette.length];
+      };
+
+      // Adaptive label density — show ~15 labels regardless of window size
+      const labelStep = Math.max(1, Math.floor(buckets.length / 15));
+      const labels = buckets.map((b, i) => {
+        if (i % labelStep !== 0) return '';
+        return days <= 1
+          ? b.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          : b.date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' });
+      });
+
+      // One stacked bar dataset per source
+      const stackDatasets = sources.map(src => ({
+        label: src,
+        data: buckets.map(b => b.tokensBySource[src] || 0),
+        backgroundColor: colorFor(src) + 'b3', // ~70% alpha
+        borderColor: colorFor(src),
+        borderWidth: 1,
+        stack: 'tokens',
+        yAxisID: 'y',
+        order: 3
+      }));
+
+      // Avg scan duration (ms) per hour — right axis line
+      const avgDurationSec = buckets.map(b => b.scanCount > 0 ? (b.durationMs / b.scanCount / 1000) : null);
+
+      // AI-ready count line overlay (left axis, same unit as stacked bars)
+      const aiReady = buckets.map(b => b.tokensAnalyzed);
+
+      scansPerHourChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            ...stackDatasets,
+            {
+              label: 'AI-ready (analyzed)',
+              data: aiReady,
+              type: 'line',
+              borderColor: '#ffeb3b',
+              backgroundColor: 'rgba(255, 235, 59, 0.1)',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.25,
+              fill: false,
+              yAxisID: 'y',
+              order: 1
+            },
+            {
+              label: 'Avg scan time (s)',
+              data: avgDurationSec,
+              type: 'line',
+              borderColor: '#ff5722',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              borderDash: [4, 3],
+              pointRadius: 0,
+              tension: 0.25,
+              fill: false,
+              yAxisID: 'y2',
+              order: 2,
+              spanGaps: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#e0e0e0', boxWidth: 12, font: { size: 11 } } },
+            title: {
+              display: true,
+              text: `Tokens per scan by source — hourly (last ${days}d)`,
+              color: '#e0e0e0',
+              font: { size: 13 }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                title: (items) => {
+                  const b = buckets[items[0].dataIndex];
+                  return b ? b.date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' }) + ':00' : '';
+                },
+                footer: (items) => {
+                  const b = buckets[items[0].dataIndex];
+                  if (!b) return '';
+                  const totalTokens = Object.values(b.tokensBySource).reduce((a, c) => a + c, 0);
+                  return `Scans: ${b.scanCount} · Tokens: ${totalTokens} · AI-ready: ${b.tokensAnalyzed}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              ticks: { color: '#9e9e9e', font: { size: 10 }, maxRotation: 0, autoSkip: false },
+              grid: { display: false }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              ticks: { color: '#9e9e9e', precision: 0 },
+              grid: { color: '#252b45' },
+              title: { display: true, text: 'Tokens / hour', color: '#9e9e9e' }
+            },
+            y2: {
+              position: 'right',
+              beginAtZero: true,
+              ticks: {
+                color: '#ff5722',
+                callback: v => v.toFixed(1) + 's'
+              },
+              grid: { display: false },
+              title: { display: true, text: 'Avg scan time', color: '#ff5722' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTradePnlChart(trades) {
+      const ctx = document.getElementById('tradePnlChart').getContext('2d');
+      
+      if (tradePnlChart) {
+        tradePnlChart.destroy();
+      }
+      
+      const colors = trades.map(t => t.pnlUsd >= 0 ? '#4caf50' : '#f44336');
+      
+      tradePnlChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: trades.map((t, i) => i + 1),
+          datasets: [{
+            label: 'Trade P&L ($)',
+            data: trades.map(t => t.pnlUsd),
+            backgroundColor: colors,
+            borderColor: colors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const trade = trades[context.dataIndex];
+                  return `${trade.symbol}: $${context.parsed.y.toFixed(2)} (${trade.pnlPct >= 0 ? '+' : ''}${trade.pnlPct.toFixed(2)}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Trade Number',
+                color: '#9e9e9e'
+              }
+            },
+            y: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'P&L ($)',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderBucketsChart(trades) {
+      const ctx = document.getElementById('bucketsChart').getContext('2d');
+      
+      if (bucketsChart) {
+        bucketsChart.destroy();
+      }
+      
+      // Define return buckets (matching backtest)
+      const buckets = [
+        { label: '<-100%', min: -Infinity, max: -100 },
+        { label: '-100% to -50%', min: -100, max: -50 },
+        { label: '-50% to -25%', min: -50, max: -25 },
+        { label: '-25% to -10%', min: -25, max: -10 },
+        { label: '-10% to -5%', min: -10, max: -5 },
+        { label: '-5% to 0%', min: -5, max: 0 },
+        { label: '0% to +25%', min: 0, max: 25 },
+        { label: '+25% to +50%', min: 25, max: 50 },
+        { label: '+50% to +75%', min: 50, max: 75 },
+        { label: '+75% to +100%', min: 75, max: 100 },
+        { label: '+100% to +200%', min: 100, max: 200 },
+        { label: '>+200%', min: 200, max: Infinity }
+      ];
+      
+      const bucketCounts = buckets.map(bucket => {
+        return trades.filter(t => t.pnlPct > bucket.min && t.pnlPct <= bucket.max).length;
+      });
+      
+      bucketsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: buckets.map(b => b.label),
+          datasets: [{
+            label: 'Number of Trades',
+            data: bucketCounts,
+            backgroundColor: bucketCounts.map((count, i) => {
+              if (i < 6) return '#f44336'; // Red for losses
+              return '#4caf50'; // Green for gains
+            }),
+            borderColor: bucketCounts.map((count, i) => {
+              if (i < 6) return '#d32f2f';
+              return '#388e3c';
+            }),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9e9e9e', maxRotation: 45, minRotation: 45 },
+              grid: { color: '#252b45' }
+            },
+            y: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Number of Trades',
+                color: '#9e9e9e'
+              },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function renderFunnelTable(funnel) {
+      const table = document.getElementById('funnelTable');
+      
+      const totalDecisions = funnel.totalDecisions || 0;
+      const passedEntry = funnel.passedEntry || 0;
+      const passedCrash = funnel.passedCrash || 0;
+      const passedRR = funnel.passedRR || 0;
+      const shouldTrade = funnel.shouldTrade || 0;
+      
+      const safePercent = (val) => (val != null && !isNaN(val)) ? val.toFixed(1) : '0.0';
+      const tradeRate = totalDecisions > 0 ? (shouldTrade / totalDecisions * 100) : 0;
+      
+      table.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Count</th>
+              <th>% of Total</th>
+              <th>Pass Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Total Decisions</strong></td>
+              <td>${totalDecisions}</td>
+              <td>100.0%</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Passed Entry Filter (≥0.50)</td>
+              <td>${passedEntry}</td>
+              <td>${safePercent(totalDecisions > 0 ? (passedEntry / totalDecisions * 100) : 0)}%</td>
+              <td>${safePercent(totalDecisions > 0 ? (passedEntry / totalDecisions * 100) : 0)}%</td>
+            </tr>
+            <tr>
+              <td>Passed Crash Filter (≥-38%)</td>
+              <td>${passedCrash}</td>
+              <td>${safePercent(totalDecisions > 0 ? (passedCrash / totalDecisions * 100) : 0)}%</td>
+              <td>${safePercent(passedEntry > 0 ? (passedCrash / passedEntry * 100) : 0)}%</td>
+            </tr>
+            <tr>
+              <td>Passed RR Filter (≥2.0)</td>
+              <td>${passedRR}</td>
+              <td>${safePercent(totalDecisions > 0 ? (passedRR / totalDecisions * 100) : 0)}%</td>
+              <td>${safePercent(passedCrash > 0 ? (passedRR / passedCrash * 100) : 0)}%</td>
+            </tr>
+            <tr style="background: #252b45;">
+              <td><strong>Should Trade</strong></td>
+              <td><strong>${shouldTrade}</strong></td>
+              <td><strong>${safePercent(tradeRate)}%</strong></td>
+              <td><strong>${safePercent(passedRR > 0 ? (shouldTrade / passedRR * 100) : 0)}%</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderFunnelChart(funnel) {
+      const ctx = document.getElementById('funnelChart').getContext('2d');
+      
+      if (funnelChart) {
+        funnelChart.destroy();
+      }
+      
+      const totalDecisions = funnel.totalDecisions || 0;
+      const passedEntry = funnel.passedEntry || 0;
+      const passedCrash = funnel.passedCrash || 0;
+      const passedRR = funnel.passedRR || 0;
+      const shouldTrade = funnel.shouldTrade || 0;
+      
+      funnelChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Total', 'Entry', 'Crash', 'RR', 'Trade'],
+          datasets: [{
+            label: 'Count',
+            data: [
+              totalDecisions,
+              passedEntry,
+              passedCrash,
+              passedRR,
+              shouldTrade
+            ],
+            backgroundColor: [
+              '#616161',
+              '#2196f3',
+              '#ff9800',
+              '#4caf50',
+              '#9c27b0'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' }
+            },
+            y: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderApiStats(codexData, rpcData, jupiterData) {
+      const table = document.getElementById('apiStatsTable');
+      const formatNumber = (val) => (val != null && !isNaN(val)) ? Math.round(val).toLocaleString() : 'N/A';
+      const formatPct = (val) => (val != null && !isNaN(val)) ? val.toFixed(1) + '%' : 'N/A';
+
+      // Cell renderer for error-count columns: red + bold when pct > 10%, plain otherwise.
+      // Shows "count (pct%)" for non-zero, "0" for zero, "-" when the tracker has no data at all.
+      const errorCell = (count, pct, total) => {
+        if (total == null || total === 0) return '<td>-</td>';
+        const c = Number(count) || 0;
+        const p = Number(pct) || 0;
+        if (c === 0) return '<td>0</td>';
+        const alert = p > 10;
+        const style = alert ? ' style="color: #f44336; font-weight: bold;"' : '';
+        return `<td${style}>${formatNumber(c)} (${formatPct(p)})</td>`;
+      };
+
+      // Sub-row renderer for the byStatusCode breakdown.
+      // Sort order: error codes first (4xx/5xx descending), then 2xx, then non-HTTP buckets.
+      // Error codes get colored red so the lone 400 among a sea of 429s stands out.
+      const statusCodeSubRow = (byStatusCode) => {
+        if (!byStatusCode) return '';
+        const keys = Object.keys(byStatusCode).filter(k => byStatusCode[k] > 0);
+        if (keys.length === 0) return '';
+        const sorted = keys.sort((a, b) => {
+          const na = parseInt(a, 10);
+          const nb = parseInt(b, 10);
+          const aIsNum = !isNaN(na);
+          const bIsNum = !isNaN(nb);
+          if (aIsNum && bIsNum) {
+            // errors (>=400) before success (<400); within each group, higher codes first
+            const aErr = na >= 400 ? 1 : 0;
+            const bErr = nb >= 400 ? 1 : 0;
+            if (aErr !== bErr) return bErr - aErr;
+            return nb - na;
+          }
+          if (aIsNum) return -1;
+          if (bIsNum) return 1;
+          return a.localeCompare(b);
+        });
+        const parts = sorted.map(k => {
+          const n = parseInt(k, 10);
+          const isError = !isNaN(n) && n >= 400;
+          const label = `${k}: ${formatNumber(byStatusCode[k])}`;
+          return isError
+            ? `<span style="color: #f44336;">${label}</span>`
+            : label;
+        }).join(' · ');
+        return `<tr><td colspan="12" style="font-size: 11px; opacity: 0.8; padding-left: 24px;">status: ${parts}</td></tr>`;
+      };
+
+      if (!codexData && !rpcData && !jupiterData) {
+        table.innerHTML = '<div class="loading">No API statistics available</div>';
+        return;
+      }
+
+      let html = '<table class="data-table">';
+      html += '<thead><tr>';
+      html += '<th>API</th>';
+      html += '<th>Total (60min)</th>';
+      html += '<th>Hourly Rate</th>';
+      html += '<th>Daily Estimate</th>';
+      html += '<th>Batched</th>';
+      html += '<th>Individual</th>';
+      html += '<th>Candles</th>';
+      html += '<th>Tokens Fetched</th>';
+      html += '<th>4xx</th>';
+      html += '<th>5xx</th>';
+      html += '<th>429 (Rate Limit)</th>';
+      html += '<th>Success Rate</th>';
+      html += '</tr></thead><tbody>';
+
+      // Codex API stats
+      if (codexData) {
+        const total = Number(codexData.total) || 0;
+        const rlPct = Number(codexData.rateLimitedPct) || 0;
+        const rowAlert = rlPct > 10 || (Number(codexData.clientErrors4xxPct) || 0) > 10 || (Number(codexData.serverErrors5xxPct) || 0) > 10;
+        const rowStyle = rowAlert ? ' style="background: rgba(244, 67, 54, 0.08);"' : '';
+        html += `<tr${rowStyle}>`;
+        html += '<td><strong>Codex API</strong></td>';
+        html += `<td>${formatNumber(total)}</td>`;
+        html += `<td>${formatNumber(codexData.hourly_rate || 0)}</td>`;
+        html += `<td>${formatNumber(codexData.daily_estimate || 0)}</td>`;
+        html += `<td>${formatNumber(codexData.batched || 0)}</td>`;
+        html += `<td>${formatNumber(codexData.individual || 0)}</td>`;
+        html += `<td>${formatNumber(codexData.candles || 0)}</td>`;
+        html += `<td>${formatNumber(codexData.tokensFetched || 0)}</td>`;
+        html += errorCell(codexData.clientErrors4xx, codexData.clientErrors4xxPct, total);
+        html += errorCell(codexData.serverErrors5xx, codexData.serverErrors5xxPct, total);
+        html += errorCell(codexData.rateLimited, codexData.rateLimitedPct, total);
+        html += `<td>${codexData.successRate != null ? formatPct(codexData.successRate) : '-'}</td>`;
+        html += '</tr>';
+        html += statusCodeSubRow(codexData.byStatusCode);
+      }
+
+      // RPC stats
+      if (rpcData) {
+        const total = Number(rpcData.total) || 0;
+        const rlPct = Number(rpcData.rateLimitedPct) || 0;
+        const rowAlert = rlPct > 10 || (Number(rpcData.clientErrors4xxPct) || 0) > 10 || (Number(rpcData.serverErrors5xxPct) || 0) > 10;
+        const rowStyle = rowAlert ? ' style="background: rgba(244, 67, 54, 0.08);"' : '';
+        html += `<tr${rowStyle}>`;
+        html += '<td><strong>RPC</strong></td>';
+        html += `<td>${formatNumber(total)}</td>`;
+        html += `<td>${formatNumber(rpcData.hourly_rate || 0)}</td>`;
+        html += `<td>${formatNumber(rpcData.daily_estimate || 0)}</td>`;
+        html += '<td>-</td>'; // RPC doesn't have batched/individual distinction
+        html += '<td>-</td>';
+        html += '<td>-</td>';
+        html += '<td>-</td>';
+        html += errorCell(rpcData.clientErrors4xx, rpcData.clientErrors4xxPct, total);
+        html += errorCell(rpcData.serverErrors5xx, rpcData.serverErrors5xxPct, total);
+        html += errorCell(rpcData.rateLimited, rpcData.rateLimitedPct, total);
+        html += `<td>${rpcData.successRate != null ? formatPct(rpcData.successRate) : '-'}</td>`;
+        html += '</tr>';
+        html += statusCodeSubRow(rpcData.byStatusCode);
+      }
+
+      // Jupiter stats
+      if (jupiterData) {
+        const total = Number(jupiterData.total) || 0;
+        const rlPct = Number(jupiterData.rateLimitedPct) || 0;
+        const rowAlert = rlPct > 10 || (Number(jupiterData.clientErrors4xxPct) || 0) > 10 || (Number(jupiterData.serverErrors5xxPct) || 0) > 10;
+        const rowStyle = rowAlert ? ' style="background: rgba(244, 67, 54, 0.08);"' : '';
+        html += `<tr${rowStyle}>`;
+        html += '<td><strong>Jupiter</strong></td>';
+        html += `<td>${formatNumber(total)}</td>`;
+        html += `<td>${formatNumber(jupiterData.hourly_rate || 0)}</td>`;
+        html += `<td>${formatNumber(jupiterData.daily_estimate || 0)}</td>`;
+        html += '<td>-</td>';
+        html += '<td>-</td>';
+        html += '<td>-</td>';
+        html += '<td>-</td>';
+        html += errorCell(jupiterData.clientErrors4xx, jupiterData.clientErrors4xxPct, total);
+        html += errorCell(jupiterData.serverErrors5xx, jupiterData.serverErrors5xxPct, total);
+        html += errorCell(jupiterData.rateLimited, jupiterData.rateLimitedPct, total);
+        html += `<td>${jupiterData.successRate != null ? formatPct(jupiterData.successRate) : '-'}</td>`;
+        html += '</tr>';
+
+        // If Jupiter reports endpoint breakdown, expose it in a sub-row for quick eyeball
+        const byEndpoint = jupiterData.byEndpoint || {};
+        const endpointKeys = Object.keys(byEndpoint);
+        if (endpointKeys.length > 0) {
+          const parts = endpointKeys.map(k => `${k}: ${formatNumber(byEndpoint[k])}`).join(' · ');
+          html += `<tr><td colspan="12" style="font-size: 11px; opacity: 0.7; padding-left: 24px;">endpoint: ${parts}</td></tr>`;
+        }
+        html += statusCodeSubRow(jupiterData.byStatusCode);
+      }
+
+      html += '</tbody></table>';
+      table.innerHTML = html;
+    }
+
+    // Load data on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      // Auto-refresh every 60 seconds
+      setInterval(loadData, 60000);
+    });
+  </script>
+</body>
+</html>

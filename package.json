@@ -1,0 +1,31 @@
+{
+  "name": "unrekt-telbot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/bot.ts",
+    "start": "bun run src/bot.ts",
+    "dev:bsc": "CHAIN=BNB bun run --watch src/bot.ts",
+    "dev:solana": "CHAIN=SOLANA bun run --watch src/bot.ts",
+    "typecheck": "tsc --noEmit",
+    "env:yaml": "sed 's/=\\(.*\\)/: \"\\1\"/' .env > .env.yaml",
+    "deploy:bsc": "gcloud run deploy unrekt-telbot-bsc --source . --region us-central1 --platform managed --allow-unauthenticated --env-vars-file environment/bsc.yaml --memory 1Gi --cpu 1 --max-instances 1 --min-instances 1 --no-cpu-throttling --cpu-boost --add-cloudsql-instances \"$CLOUDSQL_INSTANCE\"",
+    "deploy:solana": "gcloud run deploy unrekt-telbot-solana --source . --region us-central1 --platform managed --allow-unauthenticated --env-vars-file environment/solana.yaml --memory 1Gi --cpu 1 --max-instances 1 --min-instances 0 --cpu-throttling --no-cpu-boost --add-cloudsql-instances \"$CLOUDSQL_INSTANCE\"",
+    "deploy": "echo 'Please specify chain: npm run deploy:bsc or npm run deploy:solana'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.67.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "axios": "^1.13.2",
+    "bs58": "^5.0.0",
+    "grammy": "^1.32.0",
+    "pg": "^8.13.1",
+    "viem": "^2.38.4"
+  },
+  "devDependencies": {
+    "@types/bs58": "^5.0.0",
+    "@types/bun": "latest",
+    "@types/pg": "^8.15.6"
+  }
+}

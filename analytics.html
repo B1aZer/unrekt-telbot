@@ -1,0 +1,3794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token Flow Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #0a0e27;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #4fc3f7;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+    
+    .controls {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    label {
+      font-size: 12px;
+      color: #9e9e9e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    input, select, button {
+      padding: 8px 12px;
+      background: #252b45;
+      border: 1px solid #3a3f5a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4fc3f7;
+    }
+    
+    button {
+      background: #4fc3f7;
+      color: #0a0e27;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 8px 20px;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #29b6f6;
+    }
+    
+    .summary {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4fc3f7;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #9e9e9e;
+      margin-top: 5px;
+    }
+    
+    .regime-card {
+      background: linear-gradient(135deg, #1a1f3a 0%, #252b45 100%);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 2px solid #3a3f5a;
+    }
+    
+    .regime-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .regime-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    
+    .regime-item-label {
+      color: #9e9e9e;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .regime-item-value {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    
+    .regime-item-score {
+      color: #4fc3f7;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    
+    .regime-global {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4fc3f7;
+      padding: 8px 12px;
+      border-radius: 4px;
+      background: rgba(79, 195, 247, 0.1);
+      border: 1px solid #4fc3f7;
+    }
+    
+    .table-container {
+      background: #1a1f3a;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 2000px;
+    }
+    
+    thead {
+      background: #252b45;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    th {
+      padding: 12px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #9e9e9e;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #3a3f5a;
+    }
+    
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #252b45;
+      font-size: 13px;
+    }
+    
+    tbody tr:hover {
+      background: #252b45;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge-success { background: #4caf50; color: #fff; }
+    .badge-danger { background: #f44336; color: #fff; }
+    .badge-warning { background: #ff9800; color: #fff; }
+    .badge-info { background: #2196f3; color: #fff; }
+    .badge-neutral { background: #616161; color: #fff; }
+    
+    .token-address {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #4fc3f7;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .token-address:hover {
+      color: #29b6f6;
+      text-decoration: underline;
+    }
+    
+    .token-address-clickable {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #4fc3f7;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .token-address-clickable:hover {
+      color: #29b6f6;
+    }
+    
+    .token-icon {
+      transition: color 0.2s;
+    }
+    
+    .token-icon:hover {
+      color: #29b6f6;
+    }
+    
+    .token-copy-icon:hover {
+      color: #4fc3f7;
+    }
+    
+    .symbol-clickable {
+      color: #4fc3f7;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+    
+    .symbol-clickable:hover {
+      color: #29b6f6;
+      text-decoration: underline;
+    }
+    
+    .symbol-non-clickable {
+      color: #e0e0e0;
+      cursor: default;
+    }
+    
+    /* Modal styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: #1a1f3a;
+      border-radius: 8px;
+      padding: 30px;
+      width: 95%;
+      max-width: 1400px;
+      max-height: 95%;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #3a3f5a;
+    }
+    
+    .modal-title {
+      color: #4fc3f7;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .modal-close {
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    
+    .modal-close:hover {
+      background: #d32f2f;
+    }
+    
+    .number {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .positive { color: #4caf50; }
+    .negative { color: #f44336; }
+    .warning { color: #ff9800; }
+    
+    /* Peak Gain Color Grading */
+    .peak-gain-excellent { color: #ffd700; font-weight: bold; } /* 100%+ - Gold */
+    .peak-gain-great { color: #81c784; font-weight: 600; } /* 50-100% - Bright green */
+    .peak-gain-good { color: #66bb6a; } /* 30-50% - Green */
+    .peak-gain-positive { color: #4caf50; } /* 10-30% - Standard green */
+    .peak-gain-small { color: #a5d6a7; } /* 0-10% - Light green */
+    .peak-gain-negative { color: #f44336; } /* -20% to 0% - Red */
+    .peak-gain-very-negative { color: #c62828; font-weight: 600; } /* < -20% - Dark red */
+    
+    /* Peak Drawdown Color Grading (inverted - more negative = worse) */
+    .peak-drawdown-excellent { color: #a5d6a7; } /* > 0% - Light green (positive) */
+    .peak-drawdown-good { color: #4caf50; } /* 0% to -10% - Green (small drawdown) */
+    .peak-drawdown-moderate { color: #ff9800; } /* -10% to -20% - Orange (moderate) */
+    .peak-drawdown-severe { color: #f44336; } /* -20% to -50% - Red (severe) */
+    .peak-drawdown-extreme { color: #c62828; font-weight: 600; } /* < -50% - Dark red (extreme) */
+    
+    .flow-indicator {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    
+    .flow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #616161;
+    }
+    
+    .flow-dot.scanned { background: #2196f3; }
+    .flow-dot.ai-ready { background: #00bcd4; }
+    .flow-dot.decision { background: #ff9800; }
+    .flow-dot.watchlist { background: #9c27b0; }
+    .flow-dot.trade { background: #4caf50; }
+    
+    .check-mark {
+      color: #4caf50;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .cross-mark {
+      color: #f44336;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #9e9e9e;
+    }
+    
+    .error {
+      background: #f44336;
+      color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    
+    .charts-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .chart-container {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .chart-container h2 {
+      color: #4fc3f7;
+      font-size: 18px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+    }
+    
+    .funnel-container {
+      background: #1a1f3a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .funnel-container h2 {
+      color: #4fc3f7;
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .funnel-steps {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .funnel-step {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    .funnel-label {
+      width: 150px;
+      text-align: right;
+      font-size: 14px;
+      color: #9e9e9e;
+    }
+    
+    .funnel-bar {
+      flex: 1;
+      height: 40px;
+      background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0a0e27;
+      font-weight: bold;
+      font-size: 14px;
+      position: relative;
+      transition: all 0.3s;
+    }
+    
+    .funnel-bar:hover {
+      transform: scale(1.02);
+    }
+    
+    .funnel-percent {
+      width: 80px;
+      text-align: left;
+      font-size: 12px;
+      color: #9e9e9e;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #252b45;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #9e9e9e;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      color: #4fc3f7;
+    }
+    
+    .tab.active {
+      color: #4fc3f7;
+      border-bottom-color: #4fc3f7;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #1a1f3a;
+      border-radius: 4px;
+    }
+    
+    .auto-refresh label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #9e9e9e;
+      font-size: 13px;
+    }
+    
+    .auto-refresh input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .auto-refresh select {
+      padding: 4px 8px;
+      background: #252b45;
+      border: 1px solid #3a3f5a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 12px;
+    }
+    
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+      padding: 15px;
+      background: #1a1f3a;
+      border-radius: 8px;
+    }
+    
+    .pagination button {
+      padding: 8px 16px;
+      background: #252b45;
+      border: 1px solid #3a3f5a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .pagination button:hover:not(:disabled) {
+      background: #3a3f5a;
+      border-color: #4fc3f7;
+    }
+    
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .pagination .page-info {
+      color: #9e9e9e;
+      font-size: 14px;
+      margin: 0 10px;
+    }
+    
+    .pagination .page-input {
+      width: 60px;
+      padding: 4px 8px;
+      background: #252b45;
+      border: 1px solid #3a3f5a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <div class="controls">
+      <div class="control-group">
+        <label>Page Size</label>
+        <select id="pageSize">
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="200">200</option>
+          <option value="500">500</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Flow Stage</label>
+        <select id="flowStage">
+          <option value="">All (Scanned)</option>
+          <option value="ai_ready">Analysis Ready</option>
+          <option value="decision">Decision</option>
+          <option value="watchlist">Watchlist</option>
+          <option value="trade">Trade</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Chain</label>
+        <select id="chain">
+          <option value="">All</option>
+          <option value="SOLANA">Solana</option>
+          <option value="BNB">BNB</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Strategy</label>
+        <select id="strategy" onchange="onStrategyChange()">
+          <option value="">All Strategies</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Token Address</label>
+        <input type="text" id="tokenAddress" placeholder="Filter by token">
+      </div>
+      <div class="control-group">
+        <label>Scan ID</label>
+        <input type="text" id="scanId" placeholder="Filter by scan">
+      </div>
+      <div class="control-group">
+        <label>Date From</label>
+        <input type="datetime-local" id="dateFrom">
+      </div>
+      <div class="control-group">
+        <label>Date To</label>
+        <input type="datetime-local" id="dateTo">
+      </div>
+      <div class="control-group">
+        <button onclick="loadData(1)">Load Data</button>
+      </div>
+    </div>
+    
+    <div id="regime" class="regime-card" style="display: none;"></div>
+    <div id="summary" class="summary"></div>
+    <div id="error"></div>
+    
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('table', this)">📈 Table</button>
+      <button class="tab" onclick="switchTab('charts', this)">📈 Charts</button>
+    </div>
+    
+    <div id="tableTab" class="tab-content active">
+      <div class="auto-refresh">
+        <label>
+          <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+          Auto-refresh
+        </label>
+        <select id="refreshInterval">
+          <option value="10">10 seconds</option>
+          <option value="30" selected>30 seconds</option>
+          <option value="60">1 minute</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+      
+      <div class="table-container">
+        <div id="loading" class="loading">Loading...</div>
+        <table id="dataTable" style="display: none;">
+          <thead>
+            <tr>
+              <th title="Token flow stage: Scanned → AI Ready → Decision → Trade">Flow</th>
+              <th title="Token contract address">Token</th>
+              <th title="Token symbol">Symbol</th>
+              <th title="Hours ago when token was discovered">Found</th>
+              <th title="Token age in hours since pair creation">Age</th>
+              <th title="Market capitalization in USD">MCap</th>
+              <th title="Liquidity pool size in USD">Liquidity</th>
+              <th title="Risk score from 0-100 (lower is safer)">Risk</th>
+              <th title="Filter status: ready = passed all filters, filtered = rejected">Filter</th>
+              <th title="Maximum price gain from discovery price">Peak Gain</th>
+              <th title="Maximum price drop from discovery price">Peak Drawdown</th>
+              <th title="Buy/Sell transactions in last 5 minutes">5m B/S</th>
+              <th title="Buy to Sell ratio in last 5 minutes">5m Ratio</th>
+              <th title="Trading volume in last 5 minutes">5m Vol</th>
+              <th title="AI confidence level and expected value">Confidence</th>
+              <th title="AI decision: BUY or SKIP">Decision</th>
+              <th title="Strategy version used for analysis">Strategy</th>
+              <th title="Trade status: OPEN, CLOSED, etc.">Trade</th>
+              <th title="Entry price when trade was opened">Entry</th>
+              <th title="Position size in USD">Position</th>
+              <th title="Take Profit 1 target price">TP1</th>
+              <th title="Take Profit 2 target price">TP2</th>
+              <th title="Take Profit 3 target price">TP3</th>
+              <th title="Stop Loss target price">SL</th>
+              <th title="How long the position was held">Hold</th>
+              <th title="Profit/Loss percentage">PnL %</th>
+              <th title="Profit/Loss in USD">PnL $</th>
+              <th title="Number of smart money wallets that bought">SM Wallets</th>
+              <th title="Number of smart money buy transactions">SM Buys</th>
+              <th title="Smart money conviction score (weighted by wallet tier)">SM Score</th>
+              <th title="Smart money buy percentage of total buys">SM %</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      
+      <div class="pagination" id="pagination" style="display: none;">
+        <button onclick="goToFirstPage()" id="firstBtn">« First</button>
+        <button onclick="goToPrevPage()" id="prevBtn">‹ Prev</button>
+        <span class="page-info">
+          Page <input type="number" id="currentPageInput" class="page-input" min="1" onchange="goToPage(parseInt(this.value))"> of <span id="totalPages">1</span>
+        </span>
+        <button onclick="goToNextPage()" id="nextBtn">Next ›</button>
+        <button onclick="goToLastPage()" id="lastBtn">Last »</button>
+      </div>
+    </div>
+    
+    <div id="chartsTab" class="tab-content">
+      <div class="funnel-container">
+        <h2>📈 Conversion Funnel (Filtered Period)</h2>
+        <div id="funnelChart" class="funnel-steps"></div>
+      </div>
+      
+      <div class="charts-section">
+        <div class="chart-container">
+          <h2>📈 Top Bots Identified (Filtered Period)</h2>
+          <div class="chart-wrapper">
+            <canvas id="botConversionChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Returns Distribution (Filtered Period)</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Distribution of trade returns for the selected date range. Normal curve overlay shows expected distribution. Fat tails (kurtosis > 0) = more extreme outcomes than normal.
+          </p>
+          <div id="returnsDistributionStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; padding: 10px; background: #1a1f2e; border-radius: 8px;">
+            <!-- Stats will be populated by JavaScript -->
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="returnsDistributionChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Sharpe Ratio Over Time (Filtered Period)</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Rolling Sharpe ratio (30-trade window). Measures risk-adjusted returns. Higher = better. &gt;1 = good, &gt;2 = excellent, &lt;0 = losing money. Shows if strategy is improving or degrading over time.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="sharpeRatioChart"></canvas>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- All-Time Analysis Charts (not filtered by date range) -->
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #252b45;">
+        <h2 style="color: #fff; margin-bottom: 20px; font-size: 18px;">📈 All-Time Analysis</h2>
+        <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 20px;">
+          These charts analyze patterns across all historical data, not limited to the selected date range.
+        </p>
+        
+        <div class="chart-container">
+          <h2>📈 Activity by Hour of Day</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Shows activity patterns throughout the day (last 7 days). Useful for identifying optimal trading hours.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="hourlyActivityChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Activity Decay Analysis</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Win rate by activity decay (m5 vs h1). Lower decay = activity dying faster = more likely to lose (HABIBI pattern). Analyzes all closed trades.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="decayAnalysisChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Returns Distribution</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Distribution of all trade returns (last 30 days). Normal curve overlay shows expected distribution. Fat tails (kurtosis > 0) = more extreme outcomes than normal.
+          </p>
+          <div id="returnsDistributionStatsAllTime" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; padding: 10px; background: #1a1f2e; border-radius: 8px;">
+            <!-- Stats will be populated by JavaScript -->
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="returnsDistributionChartAllTime"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Drawdown Chart</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Cumulative PnL over time with drawdown from peak (shaded red). Shows worst pain periods, recovery time, and risk of ruin. Max drawdown is the largest peak-to-trough decline. Analyzes all trades (last 30 days) for full risk assessment.
+          </p>
+          <div id="drawdownStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; padding: 10px; background: #1a1f2e; border-radius: 8px;">
+            <!-- Stats will be populated by JavaScript -->
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="drawdownChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Position Size vs PnL</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Scatterplot showing correlation between position size and trade outcomes. Green = winners, Red = losers. Reveals if you're betting more on losers (dangerous pattern). Trend line shows if larger positions = better outcomes.
+          </p>
+          <div class="chart-wrapper">
+            <canvas id="positionSizeVsPnlChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>🔥 Correlation Matrix Heatmap</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Correlation coefficients between trading metrics and outcomes. Red = negative correlation, Green = positive correlation. Intensity = strength. Values range from -1 (perfect negative) to +1 (perfect positive). Shows which metrics predict success. Analyzes all trades (last 30 days) for statistical significance.
+          </p>
+          <div id="correlationMatrixContainer" style="overflow-x: auto;">
+            <!-- Correlation matrix will be rendered here as a table -->
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Alpha vs Beta Analysis</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Alpha = Excess return vs SOL (are we beating just holding SOL?). Beta = Correlation with SOL movements (market exposure). Positive Alpha = outperforming SOL. Beta ≈ 0 = uncorrelated (ideal for alpha generation). Beta > 1 = more volatile than SOL. Rolling window (30 trades) shows if strategy is improving. Analyzes all trades (last 30 days).
+          </p>
+          <div id="alphaBetaStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; padding: 10px; background: #1a1f2e; border-radius: 8px;">
+            <!-- Stats will be populated by JavaScript -->
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="alphaBetaChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <h2>📈 Kelly Criterion Calculator</h2>
+          <p style="color: #9e9e9e; font-size: 12px; margin-bottom: 10px;">
+            Optimal position sizing based on win rate and risk/reward ratio. Formula: f* = (p × b - q) / b, where p = win rate, q = loss rate, b = avg win / avg loss. Kelly tells you the optimal bet size to maximize long-term growth. <strong>Warning:</strong> Full Kelly is often too aggressive - use fractional Kelly (25-50%) for safety. Analyzes all trades (last 30 days).
+          </p>
+          <div id="kellyCriterionContainer" style="padding: 20px; background: #1a1f2e; border-radius: 8px;">
+            <!-- Kelly Criterion calculator will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const API_BASE = window.location.origin;
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalRecords = 0;
+    let pageSize = 100;
+    let strategies = [];
+    let strategyDates = {}; // Map of strategy version -> { deployed_at, next_deployed_at }
+    
+    // Load strategies on page load
+    async function loadStrategies() {
+      try {
+        const response = await fetch(`${API_BASE}/api/strategies`);
+        if (!response.ok) {
+          console.error('Failed to load strategies:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          return;
+        }
+        
+        strategies = await response.json();
+        console.log('Loaded strategies:', strategies);
+        
+        const strategySelect = document.getElementById('strategy');
+        
+        // Clear existing options (except "All")
+        strategySelect.innerHTML = '<option value="">All Strategies</option>';
+        
+        if (!strategies || strategies.length === 0) {
+          console.warn('No strategies found in database');
+          return;
+        }
+        
+        // Add strategies
+        strategies.forEach(strategy => {
+          const option = document.createElement('option');
+          option.value = strategy.version;
+          const displayName = shortenStrategyName(strategy.version);
+          option.textContent = `${displayName}${strategy.is_active ? ' (A)' : ''}`;
+          option.title = strategy.version; // Full name in tooltip
+          strategySelect.appendChild(option);
+          
+          // Store deployment dates for auto-populating date range
+          const deployedAt = new Date(strategy.deployed_at);
+          strategyDates[strategy.version] = {
+            deployed_at: deployedAt,
+            next_deployed_at: null // Will be set below
+          };
+        });
+        
+        // Calculate end date for each strategy
+        // Strategies are ordered DESC (most recent first), so:
+        // - strategies[0] = most recent (ends at "now")
+        // - strategies[1] = second most recent (ends when strategies[0] started)
+        // - strategies[2] = third most recent (ends when strategies[1] started)
+        // etc.
+        for (let i = 0; i < strategies.length; i++) {
+          const current = strategies[i];
+          if (strategyDates[current.version]) {
+            if (i === 0) {
+              // Most recent strategy ends at "now"
+              strategyDates[current.version].next_deployed_at = new Date();
+            } else {
+              // Previous strategies end when the next (more recent) strategy started
+              const previousStrategy = strategies[i - 1];
+              strategyDates[current.version].next_deployed_at = new Date(previousStrategy.deployed_at);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load strategies:', error);
+      }
+    }
+    
+    // Auto-populate dates when strategy is selected
+    function onStrategyChange() {
+      const strategySelect = document.getElementById('strategy');
+      const dateFromInput = document.getElementById('dateFrom');
+      const dateToInput = document.getElementById('dateTo');
+      
+      if (strategySelect.value && strategyDates[strategySelect.value]) {
+        const dates = strategyDates[strategySelect.value];
+        
+        // Format dates for datetime-local input (YYYY-MM-DDTHH:mm)
+        const formatDate = (date) => {
+          const d = new Date(date);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+        
+        dateFromInput.value = formatDate(dates.deployed_at);
+        if (dates.next_deployed_at) {
+          dateToInput.value = formatDate(dates.next_deployed_at);
+        } else {
+          dateToInput.value = ''; // No end date if it's the current strategy
+        }
+      } else {
+        // Clear dates if "All Strategies" is selected
+        dateFromInput.value = '';
+        dateToInput.value = '';
+      }
+    }
+    
+    async function loadData(page = 1) {
+      const loading = document.getElementById('loading');
+      const table = document.getElementById('dataTable');
+      const errorDiv = document.getElementById('error');
+      const tableBody = document.getElementById('tableBody');
+      const pagination = document.getElementById('pagination');
+      
+      loading.style.display = 'block';
+      table.style.display = 'none';
+      pagination.style.display = 'none';
+      errorDiv.innerHTML = '';
+      tableBody.innerHTML = '';
+      
+      try {
+        pageSize = parseInt(document.getElementById('pageSize').value) || 100;
+        const offset = (page - 1) * pageSize;
+        
+        const params = new URLSearchParams();
+        params.append('limit', pageSize);
+        params.append('offset', offset);
+        
+        const flowStage = document.getElementById('flowStage').value;
+        const chain = document.getElementById('chain').value;
+        const strategy = document.getElementById('strategy').value;
+        const tokenAddress = document.getElementById('tokenAddress').value;
+        const scanId = document.getElementById('scanId').value;
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        if (flowStage) params.append('flowStage', flowStage);
+        if (chain) params.append('chain', chain);
+        if (strategy) params.append('strategyVersion', strategy);
+        if (tokenAddress) params.append('tokenAddress', tokenAddress);
+        if (scanId) params.append('scanId', scanId);
+        if (dateFrom) params.append('dateFrom', dateFrom);
+        if (dateTo) params.append('dateTo', dateTo);
+        
+        console.log('[Analytics] Request params:', {
+          flowStage: flowStage || '(all scanned)',
+          chain: chain || '(all)',
+          page,
+          pageSize,
+          totalParams: params.toString()
+        });
+        
+        // Prepare all API calls in parallel for better performance
+        const summaryParams = new URLSearchParams();
+        if (dateFrom) summaryParams.append('dateFrom', dateFrom);
+        if (dateTo) summaryParams.append('dateTo', dateTo);
+        if (chain) summaryParams.append('chain', chain);
+        if (strategy) summaryParams.append('strategyVersion', strategy);
+        // If no date filters, default to 24 hours
+        if (!dateFrom && !dateTo) {
+          summaryParams.append('hours', '24');
+        }
+        
+        const regimeParams = new URLSearchParams();
+        if (chain) regimeParams.append('chain', chain);
+        
+        // Load all API endpoints in parallel for faster page load
+        const [tokenFlowResponse, summaryResponse, regimeResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/token-flow?${params}`),
+          fetch(`${API_BASE}/api/summary?${summaryParams}`),
+          fetch(`${API_BASE}/api/regime?${regimeParams}`)
+        ]);
+        
+        if (!tokenFlowResponse.ok) throw new Error('Failed to fetch data');
+        
+        // Parse all JSON responses in parallel
+        const [result, summaryData, regimeData] = await Promise.all([
+          tokenFlowResponse.json(),
+          summaryResponse.ok ? summaryResponse.json().catch(() => null) : Promise.resolve(null),
+          regimeResponse.ok ? regimeResponse.json().catch(() => null) : Promise.resolve(null)
+        ]);
+        
+        const data = result.data || result; // Support both old and new format
+        totalRecords = result.total || data.length;
+        totalPages = Math.ceil(totalRecords / pageSize) || 1;
+        
+        console.log('[Analytics] Response:', {
+          flowStage: flowStage || '(all scanned)',
+          totalRecords,
+          totalPages,
+          dataCount: data.length,
+          firstToken: data[0]?.token_address?.substring(0, 12) || 'none'
+        });
+        
+        // Ensure current page is valid after filter changes
+        if (page > totalPages && totalPages > 0) {
+          currentPage = totalPages;
+        } else {
+          currentPage = page;
+        }
+        
+        // Process summary and regime data (already fetched and parsed in parallel)
+        if (summaryData) {
+          displaySummary(summaryData);
+        }
+        
+        if (regimeData) {
+          displayRegime(regimeData);
+        }
+        
+        // Load charts data only if charts tab is active
+        const chartsTab = document.getElementById('chartsTab');
+        if (chartsTab && chartsTab.classList.contains('active')) {
+          await loadCharts();
+        }
+        
+        displayData(data);
+        updatePagination();
+        loading.style.display = 'none';
+        table.style.display = 'table';
+        pagination.style.display = 'flex';
+      } catch (error) {
+        loading.style.display = 'none';
+        errorDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+    
+    function updatePagination() {
+      document.getElementById('currentPageInput').value = currentPage;
+      document.getElementById('totalPages').textContent = totalPages;
+      
+      document.getElementById('firstBtn').disabled = currentPage === 1;
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+      document.getElementById('lastBtn').disabled = currentPage === totalPages || totalPages === 0;
+    }
+    
+    function goToPage(page) {
+      if (page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      loadData(page);
+    }
+    
+    function goToFirstPage() {
+      goToPage(1);
+    }
+    
+    function goToPrevPage() {
+      goToPage(currentPage - 1);
+    }
+    
+    function goToNextPage() {
+      goToPage(currentPage + 1);
+    }
+    
+    function goToLastPage() {
+      goToPage(totalPages);
+    }
+    
+    function displaySummary(stats) {
+      const summaryDiv = document.getElementById('summary');
+      summaryDiv.innerHTML = `
+        <div class="stat">
+          <div class="stat-value">${stats.total_scans || 0}</div>
+          <div class="stat-label">Scans</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.unique_tokens_scanned || 0}</div>
+          <div class="stat-label">Tokens Scanned</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.total_decisions || 0}</div>
+          <div class="stat-label">Decisions</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.total_trades || 0}</div>
+          <div class="stat-label">Trades</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.closed_trades || 0}</div>
+          <div class="stat-label">Closed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${stats.winning_trades || 0}/${stats.losing_trades || 0}</div>
+          <div class="stat-label">Win/Loss</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value ${parseFloat(stats.avg_pnl_percent || 0) >= 0 ? 'positive' : 'negative'}">
+            ${parseFloat(stats.avg_pnl_percent || 0).toFixed(2)}%
+          </div>
+          <div class="stat-label">Avg PnL %</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value ${parseFloat(stats.total_pnl_usd || 0) >= 0 ? 'positive' : 'negative'}">
+            $${parseFloat(stats.total_pnl_usd || 0).toFixed(2)}
+          </div>
+          <div class="stat-label">Total PnL</div>
+        </div>
+      `;
+    }
+    
+    // Format regime label for display (converts UPPER_SNAKE_CASE to readable format)
+    function formatRegimeLabel(label) {
+      if (!label) return '';
+      return label
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .replace(/Risk On/g, 'Risk-On')
+        .replace(/Risk Off/g, 'Risk-Off')
+        .replace(/Breakout Friendly/g, 'Breakout-Friendly')
+        .replace(/Mean Reversion/g, 'Mean-Reversion');
+    }
+    
+    // Shorten strategy name to ~12 characters
+    function shortenStrategyName(strategy) {
+      if (!strategy) return '';
+      // First apply common abbreviations
+      let shortened = strategy
+        .replace('v', '')
+        .replace('-strategy-c', '-c')
+        .replace('-data-driven', '-dd')
+        .replace('-unbalanced', '-u');
+      // If still too long, truncate
+      if (shortened.length > 12) {
+        shortened = shortened.substring(0, 12) + '...';
+      }
+      return shortened;
+    }
+    
+    function displayRegime(regime) {
+      const regimeDiv = document.getElementById('regime');
+      
+      if (!regime) {
+        regimeDiv.style.display = 'none';
+        return;
+      }
+      
+      const time = new Date(regime.timestamp).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      
+      regimeDiv.style.display = 'block';
+      // Format trading parameters if available (shown on hover only)
+      let paramsHtml = '';
+      if (regime.trading_parameters) {
+        const p = regime.trading_parameters;
+        const tpStr = p.tp_levels ? p.tp_levels.join('/') + '%' : 'N/A';
+        paramsHtml = `
+          <div class="regime-parameters" style="display: none; position: absolute; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 8px; margin-top: 4px; font-size: 11px; color: #9e9e9e; z-index: 1000; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+            <div style="margin-bottom: 4px; font-weight: bold; color: #fff;">Trading Parameters (Display Only)</div>
+            <div style="margin-bottom: 2px;">Size: ${(p.position_size_multiplier * 100).toFixed(0)}%</div>
+            <div style="margin-bottom: 2px;">TP: ${tpStr}</div>
+            <div style="margin-bottom: 2px;">SL: ${p.sl_percent}%</div>
+            <div>Entry: ${p.entry_threshold_adjustment > 0 ? '+' : ''}${p.entry_threshold_adjustment}</div>
+          </div>
+        `;
+      }
+      
+      regimeDiv.innerHTML = `
+        <div class="regime-row" style="position: relative;">
+          <div class="regime-global" style="cursor: help;">${formatRegimeLabel(regime.classifications.global_regime)}</div>
+          
+          <div class="regime-item">
+            <span class="regime-item-label">Market:</span>
+            <span class="regime-item-value">${formatRegimeLabel(regime.classifications.trend_regime)}</span>
+            <span class="regime-item-score">(${regime.scores.trend_score > 0 ? '+' : ''}${regime.scores.trend_score.toFixed(2)})</span>
+          </div>
+          
+          <div class="regime-item">
+            <span class="regime-item-label">Activity:</span>
+            <span class="regime-item-value">${formatRegimeLabel(regime.classifications.liquidity_regime)}</span>
+            <span class="regime-item-score">(${regime.scores.liquidity_score > 0 ? '+' : ''}${regime.scores.liquidity_score.toFixed(2)})</span>
+          </div>
+          
+          <div class="regime-item">
+            <span class="regime-item-label">Risk:</span>
+            <span class="regime-item-value">${formatRegimeLabel(regime.classifications.risk_regime)}</span>
+            <span class="regime-item-score">(${(regime.metadata.market_winrate_1h * 100).toFixed(1)}% WR, ${regime.metadata.market_ev_1h > 0 ? '+' : ''}${regime.metadata.market_ev_1h.toFixed(1)}% EV)</span>
+          </div>
+          
+          <div class="regime-item">
+            <span class="regime-item-label">BS:</span>
+            <span class="regime-item-value">${formatRegimeLabel(regime.classifications.micro_regime)}</span>
+            <span class="regime-item-score">(${regime.scores.micro_score > 0 ? '+' : ''}${regime.scores.micro_score.toFixed(2)})</span>
+          </div>
+          
+          <div class="regime-item" style="margin-left: auto; color: #9e9e9e; font-size: 11px;">
+            ${time} UTC
+          </div>
+        </div>
+        ${paramsHtml}
+      `;
+      
+      // Add hover event to show/hide parameters
+      if (regime.trading_parameters) {
+        const regimeGlobal = regimeDiv.querySelector('.regime-global');
+        const paramsDiv = regimeDiv.querySelector('.regime-parameters');
+        if (regimeGlobal && paramsDiv) {
+          regimeGlobal.addEventListener('mouseenter', () => {
+            paramsDiv.style.display = 'block';
+          });
+          regimeGlobal.addEventListener('mouseleave', () => {
+            paramsDiv.style.display = 'none';
+          });
+        }
+      }
+    }
+    
+    function displayData(data) {
+      const tableBody = document.getElementById('tableBody');
+      
+      if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="31" style="text-align: center; padding: 40px;">No data found</td></tr>';
+        return;
+      }
+      
+      tableBody.innerHTML = data.map(row => {
+        const flow = getFlowIndicator(row);
+        // Format reasoning for tooltip (truncate if too long, escape HTML, replace ML with AI for display)
+        const formatReasoning = (reasoning) => {
+          if (!reasoning) return '';
+          // Clean up internal ML/Model references for public display
+          let cleaned = reasoning
+            .replace(/ML prediction:/gi, 'AI prediction:')
+            .replace(/ML filter:/gi, 'AI analysis:')
+            .replace(/ML risk gate:/gi, 'AI risk analysis:')
+            .replace(/Model predicts/gi, 'AI predicts')
+            .replace(/\s*\(Model:\s*[^)]+\)/gi, '') // Remove (Model: model_xxx) references
+            .replace(/\n/g, ' ')
+            .replace(/\r/g, ' ')
+            .replace(/\s+/g, ' ') // Multiple spaces to single space
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .trim();
+          return cleaned.length > 200 ? cleaned.substring(0, 200) + '...' : cleaned;
+        };
+        
+        // Get AI prediction data
+        const predictedReturn = row.ml_predicted_return !== null && row.ml_predicted_return !== undefined ? row.ml_predicted_return : null;
+        const expectedValue = row.ml_expected_value !== null && row.ml_expected_value !== undefined ? row.ml_expected_value : null;
+        
+        // Build simple tooltip showing only AI predictions
+        let buyTooltip = 'AI Prediction';
+        if (predictedReturn !== null || expectedValue !== null) {
+          const lines = ['AI Prediction:'];
+          if (predictedReturn !== null) {
+            lines.push(`Predicted Return: ${predictedReturn.toFixed(2)}%`);
+          }
+          if (expectedValue !== null) {
+            lines.push(`Expected Value: ${expectedValue.toFixed(2)}%`);
+          }
+          buyTooltip = lines.join('\n');
+        }
+        
+        const decisionBadge = row.should_buy 
+          ? `<span class="badge badge-success" title="${buyTooltip}" style="cursor: help;">BUY</span>` 
+          : row.decision_id 
+            ? `<span class="badge badge-danger" title="AI decided to skip this token" style="cursor: help;">SKIP</span>` 
+            : '<span class="badge badge-neutral">-</span>';
+        
+        const tradeBadge = row.trade_status 
+          ? `<span class="badge badge-${getTradeBadgeClass(row.trade_status, row.exit_reason, row.tp1_hit, row.tp2_hit, row.tp3_hit)}">${row.trade_status}</span>`
+          : '-';
+        
+        const pnlClass = row.pnl_percent ? (row.pnl_percent >= 0 ? 'positive' : 'negative') : '';
+        const pnlUsdClass = row.net_pnl_usd ? (row.net_pnl_usd >= 0 ? 'positive' : 'negative') : '';
+        
+        // Calculate SL price from actual_entry_price and stop_loss_percent
+        // Use actual_entry_price (after slippage) to match report script
+        const entryPrice = row.actual_entry_price || row.entry_price;
+        let slPrice = null;
+        if (entryPrice && row.stop_loss_percent !== null) {
+          slPrice = entryPrice * (1 + row.stop_loss_percent / 100);
+        }
+        
+        // Calculate TP prices
+        let tp1Price = null, tp2Price = null, tp3Price = null;
+        if (entryPrice) {
+          if (row.take_profit_1 !== null) {
+            tp1Price = entryPrice * (1 + row.take_profit_1 / 100);
+          }
+          if (row.take_profit_2 !== null) {
+            tp2Price = entryPrice * (1 + row.take_profit_2 / 100);
+          }
+          if (row.take_profit_3 !== null) {
+            tp3Price = entryPrice * (1 + row.take_profit_3 / 100);
+          }
+        }
+        
+        // TP/SL indicators with tooltips showing only prices
+        const tp1Tooltip = tp1Price !== null ? `$${tp1Price.toFixed(10)}` : 'Not set';
+        const tp1 = row.trade_id 
+          ? `<span title="${tp1Tooltip}" style="cursor: help;">${row.tp1_hit ? '<span class="check-mark">&#10003;</span>' : '<span class="cross-mark">&#10005;</span>'}</span>`
+          : '-';
+        
+        const tp2Tooltip = tp2Price !== null ? `$${tp2Price.toFixed(10)}` : 'Not set';
+        const tp2 = row.trade_id 
+          ? `<span title="${tp2Tooltip}" style="cursor: help;">${row.tp2_hit ? '<span class="check-mark">&#10003;</span>' : '<span class="cross-mark">&#10005;</span>'}</span>`
+          : '-';
+        
+        const tp3Tooltip = tp3Price !== null ? `$${tp3Price.toFixed(10)}` : 'Not set';
+        const tp3 = row.trade_id 
+          ? `<span title="${tp3Tooltip}" style="cursor: help;">${row.tp3_hit ? '<span class="check-mark">&#10003;</span>' : '<span class="cross-mark">&#10005;</span>'}</span>`
+          : '-';
+        
+        const slTooltip = slPrice !== null ? `$${slPrice.toFixed(10)}` : 'Not set';
+        const sl = row.trade_id 
+          ? `<span title="${slTooltip}" style="cursor: help;">${row.exit_reason === 'stop_loss' ? '<span class="check-mark">&#10003;</span>' : '<span class="cross-mark">&#10005;</span>'}</span>`
+          : '-';
+        
+        // Format hold duration
+        const formatHoldDuration = (minutes) => {
+          if (minutes === null || minutes === undefined) return '-';
+          if (minutes < 60) return `${minutes}m`;
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          if (mins === 0) return `${hours}h`;
+          return `${hours}h ${mins}m`;
+        };
+        const holdDuration = row.trade_id && row.hold_duration_minutes !== null
+          ? formatHoldDuration(row.hold_duration_minutes)
+          : '-';
+        
+        // Generate DexScreener URL based on chain
+        const chainLower = (row.chain || 'solana').toLowerCase();
+        const dexscreenerUrl = `https://dexscreener.com/${chainLower === 'bnb' ? 'bsc' : chainLower}/${row.token_address}`;
+        
+        return `
+          <tr>
+            <td>${flow}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="token-address-clickable" 
+                      data-token="${row.token_address}" 
+                      data-chain="${row.chain || 'SOLANA'}" 
+                      data-scan="${row.scan_timestamp}"
+                      data-symbol="${row.symbol || ''}"
+                      title="Click to view candlestick chart"
+                      style="cursor: pointer; font-family: 'Courier New', monospace; font-size: 11px; color: #4fc3f7; text-decoration: underline;">
+                  ${row.token_address?.substring(0, 12)}...
+                </span>
+                <a href="${dexscreenerUrl}" target="_blank" class="token-icon" title="Open in DexScreener" style="color: #4fc3f7; text-decoration: none; font-size: 14px;">🔗</a>
+                <span class="token-copy-icon" 
+                      data-token="${row.token_address}"
+                      title="Copy token address"
+                      style="cursor: pointer; color: #9e9e9e; font-size: 14px; transition: color 0.2s;">📋</span>
+              </div>
+            </td>
+            <td>
+              ${row.symbol && row.scan_timestamp 
+                ? `<span class="symbol-clickable" data-token="${row.token_address}" data-chain="${row.chain || 'SOLANA'}" data-scan="${row.scan_timestamp}" data-symbol="${row.symbol}" title="Click to view price history">${row.symbol}</span>`
+                : `<span class="symbol-non-clickable" title="No price history available">${row.symbol || '-'}</span>`
+              }
+            </td>
+            <!-- <td>${row.discovered_by_bots ? row.discovered_by_bots.join(', ') : '-'}</td> -->
+            <td class="number" style="cursor: help;" title="${row.scan_timestamp ? new Date(row.scan_timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Date not available'}">${row.found_hours_ago !== null && row.found_hours_ago !== undefined ? `${Number(row.found_hours_ago).toFixed(1)}h` : '-'}</td>
+            <td class="number">${row.age_hours !== null && row.age_hours !== undefined ? `${Number(row.age_hours).toFixed(1)}h` : '-'}</td>
+            <td class="number">${formatNumber(row.market_cap)}</td>
+            <td class="number">${formatNumber(row.liquidity)}</td>
+            <td class="number">${row.risk_score !== null && row.risk_score !== undefined ? `${row.risk_score}/100` : '-'}</td>
+            <td>${row.filter_stage ? (() => {
+              const isReady = row.filter_stage === 'ai_ready';
+              const badgeClass = isReady ? 'badge-success' : 'badge-danger';
+              const label = isReady ? 'ready' : 'filtered';
+              const title = isReady 
+                ? 'Analysis Ready - token passed all filters and reached analysis stage'
+                : (row.filter_reason ? `Filtered at ${row.filter_stage}: ${row.filter_reason}` : `Filtered at ${row.filter_stage}`);
+              return `<span class="badge ${badgeClass}" title="${title}" style="cursor: help;">${label}</span>`;
+            })() : '-'}</td>
+             <!-- <td class="number" style="cursor: help;" title="${row.selection_score !== null && row.selection_score !== undefined ? `Quality score: ${Number(row.selection_score).toFixed(1)} (bot count, volume, buy/sell ratio, low risk, users)` : 'Not calculated (filtered before selection)'}">${row.selection_score !== null && row.selection_score !== undefined ? Number(row.selection_score).toFixed(0) : '-'}</td> -->
+            <td class="number ${(() => {
+              if (row.peak_gain === null || row.peak_gain === undefined) return '';
+              const gain = row.peak_gain;
+              if (gain >= 100) return 'peak-gain-excellent';
+              if (gain >= 50) return 'peak-gain-great';
+              if (gain >= 30) return 'peak-gain-good';
+              if (gain >= 10) return 'peak-gain-positive';
+              if (gain >= 0) return 'peak-gain-small';
+              if (gain >= -20) return 'peak-gain-negative';
+              return 'peak-gain-very-negative';
+            })()}">
+              ${row.peak_gain !== null && row.peak_gain !== undefined ? `${row.peak_gain >= 0 ? '+' : ''}${row.peak_gain.toFixed(2)}%` : '-'}
+            </td>
+            <td class="number ${(() => {
+              if (row.peak_drawdown === null || row.peak_drawdown === undefined) return '';
+              const drawdown = row.peak_drawdown;
+              if (drawdown > 0) return 'peak-drawdown-excellent';
+              if (drawdown >= -10) return 'peak-drawdown-good';
+              if (drawdown >= -20) return 'peak-drawdown-moderate';
+              if (drawdown >= -50) return 'peak-drawdown-severe';
+              return 'peak-drawdown-extreme';
+            })()}">
+              ${row.peak_drawdown !== null && row.peak_drawdown !== undefined ? `${row.peak_drawdown >= 0 ? '+' : ''}${row.peak_drawdown.toFixed(2)}%` : '-'}
+            </td>
+            <!-- <td>${row.bot_buys || 0}B/${row.bot_sells || 0}S</td> -->
+            <td>${row.txn_buys_5m || 0}B/${row.txn_sells_5m || 0}S</td>
+            <td class="number">${row.buy_sell_ratio !== null ? row.buy_sell_ratio.toFixed(2) : '-'}</td>
+            <td class="number">${row.volume_5m !== null ? formatNumber(row.volume_5m) : '-'}</td>
+            
+            ${(() => {
+              // Use ml_expected_value from dedicated column (no need to parse opportunities array)
+              const expectedValue = row.ml_expected_value !== null && row.ml_expected_value !== undefined ? row.ml_expected_value : null;
+              const confidenceDisplay = row.confidence !== null ? `${row.confidence}%` : '-';
+              const expectedValueDisplay = expectedValue !== null
+                ? ` / ${expectedValue.toFixed(2)}%`
+                : '';
+              return `<td>${confidenceDisplay}${expectedValueDisplay}</td>`;
+            })()}
+            <td>${decisionBadge}</td>
+            <td title="${row.strategy_version || ''}" style="white-space: nowrap;">${row.strategy_version ? shortenStrategyName(row.strategy_version) : '-'}</td>
+            <td>${tradeBadge}</td>
+            <td class="number">${entryPrice !== null ? formatPrice(entryPrice) : '-'}</td>
+            <td class="number">${row.entry_amount_usd !== null ? formatNumber(row.entry_amount_usd) : '-'}</td>
+            <td style="text-align: center; cursor: help;">${tp1}</td>
+            <td style="text-align: center; cursor: help;">${tp2}</td>
+            <td style="text-align: center; cursor: help;">${tp3}</td>
+            <td style="text-align: center; cursor: help;">${sl}</td>
+            <td class="number">${holdDuration}</td>
+            <td class="number ${pnlClass}">${row.pnl_percent !== null ? `${row.pnl_percent.toFixed(2)}%` : '-'}</td>
+            <td class="number ${pnlUsdClass}">${row.net_pnl_usd !== null ? `$${row.net_pnl_usd.toFixed(2)}` : '-'}</td>
+            <td class="number ${row.smart_money_wallet_count && row.smart_money_wallet_count > 0 ? 'positive' : ''}" title="${row.smart_money_wallet_count ? `${row.smart_money_wallet_count} smart money wallet${row.smart_money_wallet_count > 1 ? 's' : ''}` : 'No smart money activity'}" style="cursor: help;">
+              ${row.smart_money_wallet_count !== null && row.smart_money_wallet_count !== undefined ? row.smart_money_wallet_count : '-'}
+            </td>
+            <td class="number ${row.smart_money_buy_count && row.smart_money_buy_count > 0 ? 'positive' : ''}" title="${row.smart_money_buy_count ? `${row.smart_money_buy_count} smart money buy transaction${row.smart_money_buy_count > 1 ? 's' : ''}` : 'No smart money buys'}" style="cursor: help;">
+              ${row.smart_money_buy_count !== null && row.smart_money_buy_count !== undefined ? row.smart_money_buy_count : '-'}
+            </td>
+            <td class="number ${row.smart_money_conviction_score && row.smart_money_conviction_score > 0 ? 'positive' : ''}" title="Weighted conviction score" style="cursor: help;">
+              ${row.smart_money_conviction_score !== null && row.smart_money_conviction_score !== undefined ? row.smart_money_conviction_score.toFixed(1) : '-'}
+            </td>
+            <td class="number ${row.smart_money_buy_percentage && row.smart_money_buy_percentage > 0 ? 'positive' : ''}" title="Percentage of buys from smart money" style="cursor: help;">
+              ${row.smart_money_buy_percentage !== null && row.smart_money_buy_percentage !== undefined ? `${row.smart_money_buy_percentage.toFixed(1)}%` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function getFlowIndicator(row) {
+      const dots = [];
+      // Scanned (always present)
+      if (row.scan_id) dots.push('<span class="flow-dot scanned" title="Scanned" style="cursor: help;"></span>');
+      // Analysis Ready (filter_stage = 'ai_ready' OR has decision)
+      const isAiReady = row.filter_stage === 'ai_ready' || row.decision_id;
+      if (isAiReady) dots.push('<span class="flow-dot ai-ready" title="Analysis Ready" style="cursor: help;"></span>');
+      // Decision
+      if (row.decision_id) dots.push('<span class="flow-dot decision" title="Decision" style="cursor: help;"></span>');
+      // Watchlist
+      if (row.watchlist_id) dots.push('<span class="flow-dot watchlist" title="Watchlist" style="cursor: help;"></span>');
+      // Trade
+      if (row.trade_id) dots.push('<span class="flow-dot trade" title="Traded" style="cursor: help;"></span>');
+      return `<div class="flow-indicator">${dots.join('')}</div>`;
+    }
+    
+    function getTradeBadgeClass(status, exitReason, tp1Hit, tp2Hit, tp3Hit) {
+      if (status === 'closed') {
+        // Red only if none of the TPs were hit (i.e., stop loss or time-based exit without any TP)
+        const anyTpHit = tp1Hit || tp2Hit || tp3Hit;
+        return anyTpHit ? 'success' : 'danger';
+      }
+      return 'info';
+    }
+    
+    function formatNumber(num) {
+      if (num === null || num === undefined) return '-';
+      if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+      if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`;
+      return `$${num.toFixed(2)}`;
+    }
+    
+    function formatPrice(num) {
+      if (num === null || num === undefined) return '-';
+      return num.toFixed(10);
+    }
+    
+    let botConversionChart, hourlyActivityChart, decayAnalysisChart, returnsDistributionChart, returnsDistributionChartAllTime, sharpeRatioChart, drawdownChart, positionSizeVsPnlChart, alphaBetaChart;
+    let autoRefreshInterval = null;
+    
+    function switchTab(tabName, buttonElement) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      buttonElement.classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(tabName + 'Tab').classList.add('active');
+      
+      // Load charts if switching to charts tab
+      if (tabName === 'charts') {
+        loadCharts();
+      }
+    }
+    
+    function toggleAutoRefresh() {
+      const checkbox = document.getElementById('autoRefresh');
+      if (checkbox.checked) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    }
+    
+    function startAutoRefresh() {
+      stopAutoRefresh(); // Clear any existing interval
+      const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+      autoRefreshInterval = setInterval(() => {
+        loadData(currentPage); // Keep current page on refresh
+      }, interval);
+    }
+    
+    function stopAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+    
+    async function loadCharts() {
+      // Get date filters from UI
+      const dateFrom = document.getElementById('dateFrom').value;
+      const dateTo = document.getElementById('dateTo').value;
+      
+      // Calculate hours from date range, or use default
+      let hours = 24;
+      if (dateFrom && dateTo) {
+        const from = new Date(dateFrom);
+        const to = new Date(dateTo);
+        hours = Math.ceil((to - from) / (1000 * 60 * 60));
+      } else if (dateFrom) {
+        const from = new Date(dateFrom);
+        const to = new Date();
+        hours = Math.ceil((to - from) / (1000 * 60 * 60));
+      }
+      
+      // Build query params for filtered charts
+      // Note: Charts use date filtering only (strategy dates are auto-populated)
+      const filteredParams = new URLSearchParams();
+      if (dateFrom) filteredParams.append('dateFrom', dateFrom);
+      if (dateTo) filteredParams.append('dateTo', dateTo);
+      if (!dateFrom && !dateTo) filteredParams.append('hours', hours.toString());
+      
+      // ============================================
+      // FILTERED CHARTS (respect date range)
+      // ============================================
+      
+      // Load funnel data (filtered)
+      try {
+        const funnelResponse = await fetch(`${API_BASE}/api/funnel?${filteredParams}`);
+        if (funnelResponse.ok) {
+          const funnelData = await funnelResponse.json();
+          displayFunnel(funnelData);
+        }
+      } catch (error) {
+        console.error('Failed to load funnel data:', error);
+      }
+      
+      // Load bot performance data (filtered)
+      try {
+        const botResponse = await fetch(`${API_BASE}/api/bot-performance?${filteredParams}`);
+        if (botResponse.ok) {
+          const botData = await botResponse.json();
+          displayBotCharts(botData);
+        }
+      } catch (error) {
+        console.error('Failed to load bot performance data:', error);
+      }
+      
+      // Load returns distribution (filtered)
+      try {
+        const returnsResponse = await fetch(`${API_BASE}/api/returns-distribution?${filteredParams}`);
+        if (returnsResponse.ok) {
+          const returnsData = await returnsResponse.json();
+          displayReturnsDistributionChart(returnsData, 'returnsDistributionChart', 'returnsDistributionStats');
+        }
+      } catch (error) {
+        console.error('Failed to load returns distribution:', error);
+      }
+      
+      // Load Sharpe ratio over time (filtered)
+      try {
+        const sharpeResponse = await fetch(`${API_BASE}/api/sharpe-ratio-over-time?${filteredParams}&windowSize=30`);
+        if (sharpeResponse.ok) {
+          const sharpeData = await sharpeResponse.json();
+          if (sharpeData && sharpeData.length > 0) {
+            displaySharpeRatioChart(sharpeData);
+          } else {
+            console.warn('Sharpe ratio over time: No data available (need at least 30 closed trades)');
+            // Show message in chart container
+            const chartContainer = document.querySelector('#sharpeRatioChart')?.parentElement;
+            if (chartContainer) {
+              chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">Not enough data (need at least 30 closed trades for rolling window)</div>';
+            }
+          }
+        } else {
+          const errorData = await sharpeResponse.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Failed to load Sharpe ratio over time:', sharpeResponse.status, errorData);
+        }
+      } catch (error) {
+        console.error('Failed to load Sharpe ratio over time:', error);
+      }
+      
+      // ============================================
+      // ALL-TIME ANALYSIS CHARTS (fixed periods)
+      // ============================================
+      
+      // Load hourly activity data (last 7 days - pattern analysis)
+      try {
+        const hourlyResponse = await fetch(`${API_BASE}/api/hourly-activity?days=7`);
+        if (hourlyResponse.ok) {
+          const hourlyData = await hourlyResponse.json();
+          displayHourlyActivityChart(hourlyData);
+        }
+      } catch (error) {
+        console.error('Failed to load hourly activity data:', error);
+      }
+      
+      // Load activity decay analysis (all closed trades - strategy analysis)
+      try {
+        const decayResponse = await fetch(`${API_BASE}/api/activity-decay?hours=720`); // 30 days for better sample
+        if (decayResponse.ok) {
+          const decayData = await decayResponse.json();
+          displayDecayAnalysisChart(decayData);
+        }
+      } catch (error) {
+        console.error('Failed to load activity decay analysis:', error);
+      }
+      
+      // Load returns distribution (all-time - strategy analysis)
+      try {
+        const returnsAllTimeResponse = await fetch(`${API_BASE}/api/returns-distribution?hours=720`); // 30 days
+        if (returnsAllTimeResponse.ok) {
+          const returnsAllTimeData = await returnsAllTimeResponse.json();
+          displayReturnsDistributionChart(returnsAllTimeData, 'returnsDistributionChartAllTime', 'returnsDistributionStatsAllTime');
+        }
+      } catch (error) {
+        console.error('Failed to load all-time returns distribution:', error);
+      }
+      
+      // Load drawdown data (all-time - strategy risk analysis)
+      try {
+        const drawdownResponse = await fetch(`${API_BASE}/api/drawdown?hours=720`); // 30 days
+        if (drawdownResponse.ok) {
+          const drawdownData = await drawdownResponse.json();
+          displayDrawdownChart(drawdownData);
+        }
+      } catch (error) {
+        console.error('Failed to load drawdown data:', error);
+      }
+      
+      // Load position size vs PnL (all-time - strategy analysis)
+      try {
+        const positionSizeResponse = await fetch(`${API_BASE}/api/position-size-vs-pnl?hours=720`); // 30 days
+        if (positionSizeResponse.ok) {
+          const positionSizeData = await positionSizeResponse.json();
+          displayPositionSizeVsPnlChart(positionSizeData, 'positionSizeVsPnlChart');
+        }
+      } catch (error) {
+        console.error('Failed to load position size vs PnL data:', error);
+      }
+      
+      // Load correlation matrix (all-time - strategy analysis)
+      try {
+        const correlationResponse = await fetch(`${API_BASE}/api/correlation-matrix?hours=720`); // 30 days
+        if (correlationResponse.ok) {
+          const correlationData = await correlationResponse.json();
+          displayCorrelationMatrix(correlationData);
+        }
+      } catch (error) {
+        console.error('Failed to load correlation matrix:', error);
+      }
+      
+      // Load alpha/beta analysis (all-time - strategy analysis)
+      try {
+        const alphaBetaResponse = await fetch(`${API_BASE}/api/alpha-beta?hours=720&windowSize=30`); // 30 days, 30-trade window
+        if (alphaBetaResponse.ok) {
+          const alphaBetaData = await alphaBetaResponse.json();
+          displayAlphaBetaChart(alphaBetaData);
+        }
+      } catch (error) {
+        console.error('Failed to load alpha/beta data:', error);
+      }
+      
+      // Load Kelly Criterion (all-time - strategy analysis)
+      try {
+        const kellyResponse = await fetch(`${API_BASE}/api/kelly-criterion?hours=720`); // 30 days
+        if (kellyResponse.ok) {
+          const kellyData = await kellyResponse.json();
+          displayKellyCriterion(kellyData);
+        }
+      } catch (error) {
+        console.error('Failed to load Kelly Criterion data:', error);
+      }
+    }
+    
+    function displayFunnel(data) {
+      const funnelDiv = document.getElementById('funnelChart');
+      const steps = [
+        { label: 'Scanned', value: parseInt(data.scanned || 0) },
+        { label: 'Passed Security', value: parseInt(data.passed_security || 0) },
+        { label: 'Passed Activity', value: parseInt(data.passed_activity || 0) },
+        { label: 'Passed Liquidity', value: parseInt(data.passed_liquidity || 0) },
+        { label: 'Decisions', value: parseInt(data.decisions || 0) },
+        { label: 'Trades', value: parseInt(data.trades || 0) },
+        { label: 'Closed Trades', value: parseInt(data.closed_trades || 0) },
+        { label: 'Winners', value: parseInt(data.winning_trades || 0) },
+      ];
+      
+      const maxValue = steps[0].value || 1;
+      
+      funnelDiv.innerHTML = steps.map((step, idx) => {
+        const percent = maxValue > 0 ? (step.value / maxValue * 100) : 0;
+        const prevValue = idx > 0 ? steps[idx - 1].value : maxValue;
+        const dropoff = prevValue > 0 ? ((prevValue - step.value) / prevValue * 100) : 0;
+        const width = percent;
+        
+        return `
+          <div class="funnel-step">
+            <div class="funnel-label">${step.label}</div>
+            <div class="funnel-bar" style="width: ${width}%">
+              ${step.value.toLocaleString()}
+            </div>
+            <div class="funnel-percent">
+              ${idx > 0 ? `↓${dropoff.toFixed(1)}%` : '100%'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function displayBotCharts(data) {
+      if (!data || data.length === 0) return;
+      
+      const labels = data.map(d => d.bot_name);
+      const colors = [
+        '#4fc3f7', '#29b6f6', '#03a9f4', '#0288d1',
+        '#4caf50', '#66bb6a', '#81c784', '#a5d6a7',
+        '#ff9800', '#ffa726', '#ffb74d', '#ffcc80',
+        '#9c27b0', '#ba68c8', '#ce93d8', '#e1bee7',
+      ];
+      
+      // Top Bots Identified Chart (Conversion Rates)
+      const conversionCtx = document.getElementById('botConversionChart').getContext('2d');
+      if (botConversionChart) botConversionChart.destroy();
+      botConversionChart = new Chart(conversionCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Decision Rate %',
+              data: data.map(d => parseFloat(d.decision_rate || 0)),
+              backgroundColor: '#4fc3f7',
+            },
+            {
+              label: 'BUY Rate %',
+              data: data.map(d => parseFloat(d.buy_rate || 0)),
+              backgroundColor: '#4caf50',
+            },
+            {
+              label: 'Trade Rate %',
+              data: data.map(d => parseFloat(d.trade_rate || 0)),
+              backgroundColor: '#ff9800',
+            },
+            {
+              label: 'Win Rate %',
+              data: data.map(d => parseFloat(d.win_rate || 0)),
+              backgroundColor: '#9c27b0',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: '#9e9e9e', callback: (v) => v + '%' },
+              grid: { color: '#252b45' }
+            },
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayHourlyActivityChart(data) {
+      const labels = data.map(d => {
+        const hour = parseInt(d.hour_of_day);
+        return `${hour.toString().padStart(2, '0')}:00`;
+      });
+      
+      const hourlyCtx = document.getElementById('hourlyActivityChart').getContext('2d');
+      if (hourlyActivityChart) hourlyActivityChart.destroy();
+      hourlyActivityChart = new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Tokens Scanned',
+              data: data.map(d => parseInt(d.tokens_scanned || 0)),
+              backgroundColor: 'rgba(79, 195, 247, 0.7)',
+              borderColor: '#4fc3f7',
+              borderWidth: 1
+            },
+            {
+              label: 'Decisions',
+              data: data.map(d => parseInt(d.decisions || 0)),
+              backgroundColor: 'rgba(255, 152, 0, 0.7)',
+              borderColor: '#ff9800',
+              borderWidth: 1
+            },
+            {
+              label: 'BUY Decisions',
+              data: data.map(d => parseInt(d.buy_decisions || 0)),
+              backgroundColor: 'rgba(76, 175, 80, 0.7)',
+              borderColor: '#4caf50',
+              borderWidth: 1
+            },
+            {
+              label: 'Trades',
+              data: data.map(d => parseInt(d.trades || 0)),
+              backgroundColor: data.map(d => {
+                const pnl = parseFloat(d.total_pnl_usd || 0);
+                return pnl >= 0 ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)';
+              }),
+              borderColor: data.map(d => {
+                const pnl = parseFloat(d.total_pnl_usd || 0);
+                return pnl >= 0 ? '#4caf50' : '#f44336';
+              }),
+              borderWidth: 1
+            },
+            {
+              label: 'Total PnL ($)',
+              type: 'line',
+              data: data.map(d => parseFloat(d.total_pnl_usd || 0)),
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              yAxisID: 'y1',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#ffd700',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: (context) => {
+                  const idx = context.dataIndex;
+                  const d = data[idx];
+                  if (context.datasetIndex === 3 && d.trades > 0) { // Trades dataset
+                    return [
+                      `Winning: ${parseInt(d.winning_trades || 0)}`,
+                      `Avg PnL: ${d.avg_pnl_percent ? parseFloat(d.avg_pnl_percent).toFixed(2) + '%' : 'N/A'}`,
+                      `Total PnL: $${parseFloat(d.total_pnl_usd || 0).toFixed(2)}`
+                    ];
+                  }
+                  if (context.datasetIndex === 4) { // PnL line
+                    return [
+                      `Avg PnL: ${d.avg_pnl_percent ? parseFloat(d.avg_pnl_percent).toFixed(2) + '%' : 'N/A'}`,
+                      `Trades: ${parseInt(d.trades || 0)}`,
+                      `Winning: ${parseInt(d.winning_trades || 0)}`
+                    ];
+                  }
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 4) {
+                    return `Total PnL: $${parseFloat(context.parsed.y).toFixed(2)}`;
+                  }
+                  return context.dataset.label + ': ' + context.parsed.y;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              position: 'left',
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Count',
+                color: '#9e9e9e'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: false,
+              ticks: { 
+                color: '#ffd700',
+                callback: function(value) {
+                  return '$' + value.toFixed(2);
+                }
+              },
+              grid: { 
+                drawOnChartArea: false,
+                color: '#252b45'
+              },
+              title: {
+                display: true,
+                text: 'Total PnL ($)',
+                color: '#ffd700'
+              }
+            },
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayDecayAnalysisChart(data) {
+      if (!data || data.length === 0) {
+        const ctx = document.getElementById('decayAnalysisChart').getContext('2d');
+        if (decayAnalysisChart) decayAnalysisChart.destroy();
+        // Show message if no data
+        return;
+      }
+      
+      const labels = data.map(d => d.decay_bucket);
+      const winRates = data.map(d => parseFloat(d.win_rate || 0));
+      const totalTrades = data.map(d => parseInt(d.total_trades || 0));
+      const avgPnl = data.map(d => parseFloat(d.avg_pnl_percent || 0));
+      
+      // Color bars based on win rate (green = high win rate, red = low win rate)
+      const barColors = winRates.map(rate => {
+        if (rate >= 60) return 'rgba(76, 175, 80, 0.7)'; // Green
+        if (rate >= 50) return 'rgba(255, 193, 7, 0.7)'; // Yellow
+        if (rate >= 40) return 'rgba(255, 152, 0, 0.7)'; // Orange
+        return 'rgba(244, 67, 54, 0.7)'; // Red
+      });
+      
+      const borderColors = winRates.map(rate => {
+        if (rate >= 60) return '#4caf50';
+        if (rate >= 50) return '#ffc107';
+        if (rate >= 40) return '#ff9800';
+        return '#f44336';
+      });
+      
+      const decayCtx = document.getElementById('decayAnalysisChart').getContext('2d');
+      if (decayAnalysisChart) decayAnalysisChart.destroy();
+      decayAnalysisChart = new Chart(decayCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Win Rate %',
+              data: winRates,
+              backgroundColor: barColors,
+              borderColor: borderColors,
+              borderWidth: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Avg PnL %',
+              type: 'line',
+              data: avgPnl,
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              pointRadius: 4,
+              pointBackgroundColor: '#ffd700',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: (context) => {
+                  const idx = context.dataIndex;
+                  const d = data[idx];
+                  if (context.datasetIndex === 0) { // Win rate bar
+                    return [
+                      `Total Trades: ${d.total_trades}`,
+                      `Winners: ${d.winning_trades} | Losers: ${d.losing_trades}`,
+                      `Avg PnL: ${parseFloat(d.avg_pnl_percent || 0).toFixed(2)}%`,
+                      `Total PnL: $${parseFloat(d.total_pnl_usd || 0).toFixed(2)}`,
+                      `Avg Decay: ${(parseFloat(d.avg_decay || 0) * 100).toFixed(1)}%`
+                    ];
+                  }
+                  if (context.datasetIndex === 1) { // PnL line
+                    return [
+                      `Win Rate: ${parseFloat(d.win_rate || 0).toFixed(1)}%`,
+                      `Total Trades: ${d.total_trades}`
+                    ];
+                  }
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 0) {
+                    return `Win Rate: ${context.parsed.y.toFixed(1)}%`;
+                  }
+                  return `Avg PnL: ${context.parsed.y.toFixed(2)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              position: 'left',
+              ticks: { 
+                color: '#9e9e9e',
+                callback: function(value) {
+                  return value + '%';
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Win Rate (%)',
+                color: '#9e9e9e'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: false,
+              ticks: { 
+                color: '#ffd700',
+                callback: function(value) {
+                  return value.toFixed(1) + '%';
+                }
+              },
+              grid: { 
+                drawOnChartArea: false,
+                color: '#252b45'
+              },
+              title: {
+                display: true,
+                text: 'Avg PnL (%)',
+                color: '#ffd700'
+              }
+            },
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Activity Decay (m5 vs h1)',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayReturnsDistributionChart(data, chartId = 'returnsDistributionChart', statsId = 'returnsDistributionStats') {
+      if (!data || !data.buckets || data.buckets.length === 0) {
+        const ctx = document.getElementById(chartId);
+        if (ctx) {
+          const chartCtx = ctx.getContext('2d');
+          const chartVar = chartId === 'returnsDistributionChart' ? returnsDistributionChart : returnsDistributionChartAllTime;
+          if (chartVar) chartVar.destroy();
+          // Show message if no data
+          return;
+        }
+      }
+      
+      // Display statistics
+      const statsDiv = document.getElementById(statsId);
+      if (statsDiv && data.stats) {
+        const stats = data.stats;
+        const skewnessColor = stats.skewness < -0.5 ? '#f44336' : stats.skewness > 0.5 ? '#4caf50' : '#ffc107';
+        const kurtosisColor = stats.kurtosis > 1 ? '#f44336' : stats.kurtosis > 0 ? '#ffc107' : '#4caf50';
+        const kurtosisLabel = stats.kurtosis > 1 ? 'FAT TAILS!' : stats.kurtosis > 0 ? 'Slight fat tails' : 'Normal tails';
+        
+        statsDiv.innerHTML = `
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Total Trades</div>
+            <div style="color: #fff; font-size: 18px; font-weight: bold;">${stats.total_trades}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Mean</div>
+            <div style="color: ${stats.mean >= 0 ? '#4caf50' : '#f44336'}; font-size: 18px; font-weight: bold;">${stats.mean.toFixed(2)}%</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Std Dev</div>
+            <div style="color: #fff; font-size: 18px; font-weight: bold;">${stats.std_dev.toFixed(2)}%</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Skewness</div>
+            <div style="color: ${skewnessColor}; font-size: 18px; font-weight: bold;" title="${stats.skewness < 0 ? 'Negative skew: more/larger losses' : 'Positive skew: more/larger wins'}">${stats.skewness.toFixed(2)}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Kurtosis</div>
+            <div style="color: ${kurtosisColor}; font-size: 18px; font-weight: bold;" title="${kurtosisLabel}">${stats.kurtosis.toFixed(2)}</div>
+            <div style="color: ${kurtosisColor}; font-size: 10px;">${kurtosisLabel}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Min / Max</div>
+            <div style="color: #fff; font-size: 14px;">${stats.min.toFixed(1)}% / ${stats.max.toFixed(1)}%</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Median</div>
+            <div style="color: #fff; font-size: 14px;">${stats.median.toFixed(2)}%</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Q25 / Q75</div>
+            <div style="color: #fff; font-size: 14px;">${stats.q25.toFixed(1)}% / ${stats.q75.toFixed(1)}%</div>
+          </div>
+        `;
+      }
+      
+      const labels = data.buckets.map(b => b.bucket_label);
+      const actualCounts = data.buckets.map(b => b.count);
+      const expectedCounts = data.buckets.map(b => b.expected_normal_count || 0);
+      
+      // Color bars based on deviation from expected
+      const barColors = data.buckets.map((b, i) => {
+        const expected = expectedCounts[i];
+        const actual = actualCounts[i];
+        if (expected === 0) return 'rgba(244, 67, 54, 0.7)'; // Outlier - red
+        const ratio = actual / expected;
+        if (ratio > 2) return 'rgba(244, 67, 54, 0.7)'; // Much more than expected - red (fat tail)
+        if (ratio > 1.5) return 'rgba(255, 152, 0, 0.7)'; // More than expected - orange
+        if (ratio < 0.5) return 'rgba(76, 175, 80, 0.7)'; // Less than expected - green
+        return 'rgba(79, 195, 247, 0.7)'; // Normal - blue
+      });
+      
+      const returnsCtx = document.getElementById(chartId).getContext('2d');
+      const chartVar = chartId === 'returnsDistributionChart' ? returnsDistributionChart : returnsDistributionChartAllTime;
+      if (chartVar) chartVar.destroy();
+      const newChart = new Chart(returnsCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Actual Distribution',
+              data: actualCounts,
+              backgroundColor: barColors,
+              borderColor: barColors.map(c => c.replace('0.7', '1')),
+              borderWidth: 1,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Expected Normal Distribution',
+              type: 'line',
+              data: expectedCounts,
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              tension: 0.4,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: (context) => {
+                  const idx = context.dataIndex;
+                  const bucket = data.buckets[idx];
+                  if (context.datasetIndex === 0) { // Actual bar
+                    const expected = bucket.expected_normal_count || 0;
+                    const deviation = expected > 0 ? ((bucket.count - expected) / expected * 100).toFixed(1) : 'N/A';
+                    return [
+                      `Expected: ${expected.toFixed(1)}`,
+                      `Deviation: ${deviation}%`,
+                      bucket.avg_pnl !== null ? `Avg PnL: ${bucket.avg_pnl.toFixed(2)}%` : '',
+                      `Total PnL: $${bucket.total_pnl_usd.toFixed(2)}`
+                    ].filter(Boolean);
+                  }
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 0) {
+                    return `Actual: ${context.parsed.y} trades`;
+                  }
+                  return `Expected: ${context.parsed.y.toFixed(1)} trades`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              position: 'left',
+              ticks: { 
+                color: '#9e9e9e',
+                stepSize: 1
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Number of Trades',
+                color: '#9e9e9e'
+              }
+            },
+            x: {
+              ticks: { 
+                color: '#9e9e9e',
+                maxRotation: 45,
+                minRotation: 45
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'PnL Range (%)',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+      
+      // Store chart reference
+      if (chartId === 'returnsDistributionChart') {
+        returnsDistributionChart = newChart;
+      } else {
+        returnsDistributionChartAllTime = newChart;
+      }
+    }
+    
+    function displaySharpeRatioChart(data) {
+      if (!data || data.length === 0) {
+        const ctx = document.getElementById('sharpeRatioChart');
+        if (ctx) {
+          const chartCtx = ctx.getContext('2d');
+          if (sharpeRatioChart) sharpeRatioChart.destroy();
+          // Show message in chart container
+          const chartContainer = ctx.parentElement;
+          if (chartContainer && !chartContainer.querySelector('.no-data-message')) {
+            const message = document.createElement('div');
+            message.className = 'no-data-message';
+            message.style.cssText = 'text-align: center; padding: 40px; color: #9e9e9e;';
+            message.textContent = 'Not enough data (need at least 30 closed trades for rolling window)';
+            chartContainer.appendChild(message);
+          }
+          return;
+        }
+      }
+      
+      // Remove any existing no-data message
+      const chartContainer = document.getElementById('sharpeRatioChart')?.parentElement;
+      if (chartContainer) {
+        const noDataMsg = chartContainer.querySelector('.no-data-message');
+        if (noDataMsg) noDataMsg.remove();
+      }
+      
+      const labels = data.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + 
+               date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      });
+      
+      const sharpeRatios = data.map(d => d.sharpe_ratio !== null ? parseFloat(d.sharpe_ratio) : null);
+      const meanReturns = data.map(d => parseFloat(d.mean_return || 0));
+      const winRates = data.map(d => parseFloat(d.win_rate || 0));
+      
+      // Color line based on Sharpe ratio value
+      const lineColor = (value) => {
+        if (value === null) return '#9e9e9e';
+        if (value > 2) return '#4caf50'; // Excellent - green
+        if (value > 1) return '#8bc34a'; // Good - light green
+        if (value > 0) return '#ffc107'; // Positive but low - yellow
+        return '#f44336'; // Negative - red
+      };
+      
+      const sharpeCtx = document.getElementById('sharpeRatioChart').getContext('2d');
+      if (sharpeRatioChart) sharpeRatioChart.destroy();
+      sharpeRatioChart = new Chart(sharpeCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Sharpe Ratio',
+              data: sharpeRatios,
+              borderColor: sharpeRatios.map(sr => lineColor(sr)),
+              backgroundColor: sharpeRatios.map(sr => {
+                const color = lineColor(sr);
+                return color.replace('rgb', 'rgba').replace(')', ', 0.1)');
+              }),
+              borderWidth: 2,
+              tension: 0.4,
+              pointRadius: 3,
+              pointBackgroundColor: sharpeRatios.map(sr => lineColor(sr)),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1,
+              yAxisID: 'y',
+              spanGaps: true // Connect across null values
+            },
+            {
+              label: 'Win Rate %',
+              type: 'line',
+              data: winRates,
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              tension: 0.4,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: (context) => {
+                  const idx = context.dataIndex;
+                  const d = data[idx];
+                  if (context.datasetIndex === 0) { // Sharpe ratio
+                    return [
+                      `Mean Return: ${d.mean_return.toFixed(2)}%`,
+                      `Std Dev: ${d.std_dev.toFixed(2)}%`,
+                      `Win Rate: ${d.win_rate.toFixed(1)}%`,
+                      `Total PnL: $${d.total_pnl_usd.toFixed(2)}`,
+                      `Trades in window: ${d.total_trades}`
+                    ];
+                  }
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 0) {
+                    const value = context.parsed.y;
+                    if (value === null) return 'Sharpe Ratio: N/A';
+                    return `Sharpe Ratio: ${value.toFixed(2)}`;
+                  }
+                  return `Win Rate: ${context.parsed.y.toFixed(1)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              position: 'left',
+              ticks: { 
+                color: '#9e9e9e',
+                callback: function(value) {
+                  return value.toFixed(2);
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Sharpe Ratio (Reference: 0=break-even, 1=good, 2=excellent)',
+                color: '#9e9e9e'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              max: 100,
+              ticks: { 
+                color: '#ffd700',
+                callback: function(value) {
+                  return value.toFixed(0) + '%';
+                }
+              },
+              grid: { 
+                drawOnChartArea: false,
+                color: '#252b45'
+              },
+              title: {
+                display: true,
+                text: 'Win Rate (%)',
+                color: '#ffd700'
+              }
+            },
+            x: {
+              ticks: { 
+                color: '#9e9e9e',
+                maxRotation: 45,
+                minRotation: 45
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Time (Rolling 30-trade window)',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayDrawdownChart(data) {
+      if (!data || !data.data || data.data.length === 0) {
+        const ctx = document.getElementById('drawdownChart');
+        if (ctx) {
+          const chartCtx = ctx.getContext('2d');
+          if (drawdownChart) drawdownChart.destroy();
+          return;
+        }
+      }
+      
+      // Display statistics
+      const statsDiv = document.getElementById('drawdownStats');
+      if (statsDiv && data) {
+        const maxDdColor = data.maxDrawdownPercent > 20 ? '#f44336' : data.maxDrawdownPercent > 10 ? '#ff9800' : '#ffc107';
+        const currentDdColor = data.currentDrawdownPercent > 20 ? '#f44336' : data.currentDrawdownPercent > 10 ? '#ff9800' : '#4caf50';
+        
+        statsDiv.innerHTML = `
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Total Trades</div>
+            <div style="color: #fff; font-size: 18px; font-weight: bold;">${data.totalTrades || 0}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Final PnL</div>
+            <div style="color: ${data.finalCumulativePnl >= 0 ? '#4caf50' : '#f44336'}; font-size: 18px; font-weight: bold;">$${data.finalCumulativePnl ? data.finalCumulativePnl.toFixed(2) : '0.00'}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Max Drawdown</div>
+            <div style="color: ${maxDdColor}; font-size: 18px; font-weight: bold;">$${data.maxDrawdown ? data.maxDrawdown.toFixed(2) : '0.00'}</div>
+            <div style="color: ${maxDdColor}; font-size: 12px;">${data.maxDrawdownPercent ? data.maxDrawdownPercent.toFixed(1) + '%' : '0%'}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Current Drawdown</div>
+            <div style="color: ${currentDdColor}; font-size: 18px; font-weight: bold;">$${data.currentDrawdown ? data.currentDrawdown.toFixed(2) : '0.00'}</div>
+            <div style="color: ${currentDdColor}; font-size: 12px;">${data.currentDrawdownPercent ? data.currentDrawdownPercent.toFixed(1) + '%' : '0%'}</div>
+          </div>
+          ${data.maxDrawdownStart ? `
+          <div style="text-align: center;">
+            <div style="color: #9e9e9e; font-size: 11px;">Max DD Period</div>
+            <div style="color: #fff; font-size: 12px;">${new Date(data.maxDrawdownStart).toLocaleDateString()}</div>
+            <div style="color: #fff; font-size: 12px;">to ${data.maxDrawdownEnd ? new Date(data.maxDrawdownEnd).toLocaleDateString() : 'now'}</div>
+          </div>
+          ` : ''}
+        `;
+      }
+      
+      const labels = data.data.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + 
+               date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      });
+      
+      const cumulativePnl = data.data.map(d => parseFloat(d.cumulative_pnl_usd || 0));
+      const drawdowns = data.data.map(d => parseFloat(d.drawdown_usd || 0));
+      const peaks = data.data.map(d => parseFloat(d.peak_pnl_usd || 0));
+      
+      const drawdownCtx = document.getElementById('drawdownChart').getContext('2d');
+      if (drawdownChart) drawdownChart.destroy();
+      drawdownChart = new Chart(drawdownCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Cumulative PnL',
+              data: cumulativePnl,
+              borderColor: '#4caf50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderWidth: 2,
+              tension: 0.4,
+              pointRadius: 2,
+              pointBackgroundColor: '#4caf50',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1,
+              fill: false,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Peak PnL',
+              data: peaks,
+              borderColor: '#4fc3f7',
+              backgroundColor: 'rgba(79, 195, 247, 0.05)',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              tension: 0.4,
+              fill: false,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Drawdown',
+              data: drawdowns,
+              borderColor: '#f44336',
+              backgroundColor: 'rgba(244, 67, 54, 0.2)',
+              borderWidth: 1,
+              pointRadius: 0,
+              tension: 0.4,
+              fill: {
+                target: 'origin',
+                above: 'rgba(244, 67, 54, 0.2)'
+              },
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: (context) => {
+                  const idx = context.dataIndex;
+                  const d = data.data[idx];
+                  if (context.datasetIndex === 0) { // Cumulative PnL
+                    return [
+                      `Peak: $${d.peak_pnl_usd.toFixed(2)}`,
+                      `Drawdown: $${d.drawdown_usd.toFixed(2)} (${d.drawdown_percent.toFixed(1)}%)`,
+                      `Trade PnL: $${d.trade_pnl_usd.toFixed(2)} (${d.trade_pnl_percent.toFixed(2)}%)`
+                    ];
+                  }
+                  if (context.datasetIndex === 1) { // Peak
+                    return [
+                      `Cumulative: $${d.cumulative_pnl_usd.toFixed(2)}`,
+                      `Drawdown: $${d.drawdown_usd.toFixed(2)}`
+                    ];
+                  }
+                  if (context.datasetIndex === 2) { // Drawdown
+                    return [
+                      `From Peak: $${d.peak_pnl_usd.toFixed(2)}`,
+                      `Current: $${d.cumulative_pnl_usd.toFixed(2)}`,
+                      `Drawdown %: ${d.drawdown_percent.toFixed(1)}%`
+                    ];
+                  }
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 0) {
+                    return `Cumulative PnL: $${context.parsed.y.toFixed(2)}`;
+                  }
+                  if (context.datasetIndex === 1) {
+                    return `Peak PnL: $${context.parsed.y.toFixed(2)}`;
+                  }
+                  return `Drawdown: $${context.parsed.y.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              position: 'left',
+              ticks: { 
+                color: '#9e9e9e',
+                callback: function(value) {
+                  return '$' + value.toFixed(0);
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Cumulative PnL ($)',
+                color: '#9e9e9e'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              ticks: { 
+                color: '#f44336',
+                callback: function(value) {
+                  return '$' + value.toFixed(0);
+                }
+              },
+              grid: { 
+                drawOnChartArea: false,
+                color: '#252b45'
+              },
+              title: {
+                display: true,
+                text: 'Drawdown ($)',
+                color: '#f44336'
+              }
+            },
+            x: {
+              ticks: { 
+                color: '#9e9e9e',
+                maxRotation: 45,
+                minRotation: 45
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Time',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayPositionSizeVsPnlChart(data, canvasId = 'positionSizeVsPnlChart') {
+      if (!data || !data.trades || data.trades.length === 0) {
+        const ctx = document.getElementById(canvasId);
+        if (ctx) {
+          const chartCtx = ctx.getContext('2d');
+          if (canvasId === 'positionSizeVsPnlChart' && positionSizeVsPnlChart) {
+            positionSizeVsPnlChart.destroy();
+          }
+          return;
+        }
+      }
+      
+      const trades = data.trades;
+      const maxPositionUsd = data.maxPositionUsd || 100;
+      
+      // Separate winners and losers
+      const winners = trades.filter(t => t.isWinner);
+      const losers = trades.filter(t => !t.isWinner);
+      
+      // Calculate win rate by position size buckets for trend line
+      // Use maxPositionUsd to cap buckets, but also check actual max in data
+      const bucketSize = 10; // $10 buckets
+      const actualMaxSize = Math.max(...trades.map(t => t.positionSizeUsd));
+      const maxSize = Math.min(maxPositionUsd, actualMaxSize);
+      const buckets = [];
+      
+      for (let bucketStart = 0; bucketStart <= maxSize; bucketStart += bucketSize) {
+        const bucketEnd = bucketStart + bucketSize;
+        const bucketTrades = trades.filter(t => 
+          t.positionSizeUsd >= bucketStart && t.positionSizeUsd < bucketEnd
+        );
+        
+        if (bucketTrades.length > 0) {
+          const winRate = (bucketTrades.filter(t => t.isWinner).length / bucketTrades.length) * 100;
+          const avgPnl = bucketTrades.reduce((sum, t) => sum + t.pnlPercent, 0) / bucketTrades.length;
+          const avgSize = bucketTrades.reduce((sum, t) => sum + t.positionSizeUsd, 0) / bucketTrades.length;
+          
+          buckets.push({
+            positionSize: avgSize,
+            winRate: winRate,
+            avgPnl: avgPnl,
+            count: bucketTrades.length
+          });
+        }
+      }
+      
+      const positionCtx = document.getElementById(canvasId).getContext('2d');
+      if (canvasId === 'positionSizeVsPnlChart' && positionSizeVsPnlChart) {
+        positionSizeVsPnlChart.destroy();
+      }
+      
+      const chartInstance = new Chart(positionCtx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Winners',
+              data: winners.map(t => ({
+                x: t.positionSizeUsd,
+                y: t.pnlPercent
+              })),
+              backgroundColor: 'rgba(76, 175, 80, 0.6)',
+              borderColor: '#4caf50',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointBorderWidth: 1,
+              pointBorderColor: '#fff'
+            },
+            {
+              label: 'Losers',
+              data: losers.map(t => ({
+                x: t.positionSizeUsd,
+                y: t.pnlPercent
+              })),
+              backgroundColor: 'rgba(244, 67, 54, 0.6)',
+              borderColor: '#f44336',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              pointBorderWidth: 1,
+              pointBorderColor: '#fff'
+            },
+            {
+              label: 'Avg PnL Trend',
+              type: 'line',
+              data: buckets.map(b => ({
+                x: b.positionSize,
+                y: b.avgPnl
+              })),
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#ffd700',
+              tension: 0.4,
+              fill: false,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'point',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  const item = items[0];
+                  const trade = trades.find(t => 
+                    Math.abs(t.positionSizeUsd - item.parsed.x) < 0.01 &&
+                    Math.abs(t.pnlPercent - item.parsed.y) < 0.01
+                  );
+                  return trade ? `${trade.symbol} (Trade #${trade.id})` : 'Position Size vs PnL';
+                },
+                label: (context) => {
+                  if (context.datasetIndex === 2) { // Trend line
+                    const bucket = buckets[context.dataIndex];
+                    return [
+                      `Position Size: $${bucket.positionSize.toFixed(2)}`,
+                      `Avg PnL: ${bucket.avgPnl.toFixed(2)}%`,
+                      `Win Rate: ${bucket.winRate.toFixed(1)}%`,
+                      `Trades: ${bucket.count}`
+                    ];
+                  }
+                  const trade = trades.find(t => 
+                    Math.abs(t.positionSizeUsd - context.parsed.x) < 0.01 &&
+                    Math.abs(t.pnlPercent - context.parsed.y) < 0.01
+                  );
+                  if (trade) {
+                    return [
+                      `Position Size: $${trade.positionSizeUsd.toFixed(2)}`,
+                      `PnL: ${trade.pnlPercent.toFixed(2)}% ($${trade.netPnlUsd.toFixed(2)})`,
+                      trade.confidence !== null ? `Confidence: ${trade.confidence}%` : ''
+                    ].filter(Boolean);
+                  }
+                  return `Position: $${context.parsed.x.toFixed(2)}, PnL: ${context.parsed.y.toFixed(2)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              min: 0,
+              max: maxPositionUsd,
+              ticks: { 
+                color: '#9e9e9e',
+                callback: function(value) {
+                  return '$' + value.toFixed(0);
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: `Position Size (USD) - Max: $${maxPositionUsd}`,
+                color: '#9e9e9e'
+              }
+            },
+            y: {
+              ticks: { 
+                color: '#9e9e9e',
+                callback: function(value) {
+                  return value.toFixed(0) + '%';
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'PnL (%)',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+      
+      // Store chart instance based on canvas ID
+      if (canvasId === 'positionSizeVsPnlChart') {
+        positionSizeVsPnlChart = chartInstance;
+      }
+    }
+    
+    function displayCorrelationMatrix(data) {
+      const container = document.getElementById('correlationMatrixContainer');
+      if (!container) return;
+      
+      if (!data || !data.matrix || data.matrix.length === 0 || data.sampleSize < 10) {
+        container.innerHTML = `<p style="color: #9e9e9e; text-align: center; padding: 20px;">Not enough data (need at least 10 trades). Current sample: ${data?.sampleSize || 0}</p>`;
+        return;
+      }
+      
+      const { matrix, metrics, sampleSize } = data;
+      
+      // Create table
+      let html = `<div style="margin-bottom: 10px; color: #9e9e9e; font-size: 12px;">Sample size: ${sampleSize} trades</div>`;
+      html += '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+      
+      // Header row
+      html += '<thead><tr>';
+      html += '<th style="padding: 8px; text-align: left; border: 1px solid #252b45; background: #1a1f2e; color: #9e9e9e; position: sticky; left: 0; z-index: 10;">Metric</th>';
+      metrics.forEach(metric => {
+        html += `<th style="padding: 8px; text-align: center; border: 1px solid #252b45; background: #1a1f2e; color: #9e9e9e; min-width: 100px;">${metric}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      
+      // Data rows
+      matrix.forEach((row, i) => {
+        html += '<tr>';
+        html += `<td style="padding: 8px; border: 1px solid #252b45; background: #1a1f2e; color: #9e9e9e; position: sticky; left: 0; z-index: 5; font-weight: 500;">${metrics[i]}</td>`;
+        row.forEach((cell, j) => {
+          const value = cell.value;
+          const absValue = Math.abs(value);
+          
+          // Color intensity based on correlation strength
+          let bgColor = '#1a1f2e'; // Default dark
+          if (absValue > 0.7) {
+            bgColor = value > 0 ? 'rgba(76, 175, 80, 0.8)' : 'rgba(244, 67, 54, 0.8)'; // Strong
+          } else if (absValue > 0.5) {
+            bgColor = value > 0 ? 'rgba(76, 175, 80, 0.6)' : 'rgba(244, 67, 54, 0.6)'; // Moderate
+          } else if (absValue > 0.3) {
+            bgColor = value > 0 ? 'rgba(76, 175, 80, 0.4)' : 'rgba(244, 67, 54, 0.4)'; // Weak
+          } else if (absValue > 0.1) {
+            bgColor = value > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'; // Very weak
+          }
+          
+          // Diagonal (self-correlation) - always 1.0
+          if (i === j) {
+            bgColor = '#252b45'; // Dark gray for diagonal
+          }
+          
+          const textColor = absValue > 0.5 ? '#fff' : '#9e9e9e';
+          const displayValue = i === j ? '1.00' : value.toFixed(2);
+          
+          html += `<td style="padding: 8px; text-align: center; border: 1px solid #252b45; background: ${bgColor}; color: ${textColor}; cursor: pointer;" title="${metrics[i]} vs ${metrics[j]}: ${value.toFixed(3)}">${displayValue}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      
+      // Add legend
+      html += '<div style="margin-top: 15px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; color: #9e9e9e; font-size: 12px;">';
+      html += '<div><span style="display: inline-block; width: 20px; height: 12px; background: rgba(76, 175, 80, 0.8); margin-right: 5px;"></span>Strong Positive (&gt;0.7)</div>';
+      html += '<div><span style="display: inline-block; width: 20px; height: 12px; background: rgba(76, 175, 80, 0.4); margin-right: 5px;"></span>Moderate Positive (0.3-0.7)</div>';
+      html += '<div><span style="display: inline-block; width: 20px; height: 12px; background: rgba(244, 67, 54, 0.4); margin-right: 5px;"></span>Moderate Negative (-0.3 to -0.7)</div>';
+      html += '<div><span style="display: inline-block; width: 20px; height: 12px; background: rgba(244, 67, 54, 0.8); margin-right: 5px;"></span>Strong Negative (&lt;-0.7)</div>';
+      html += '<div><span style="display: inline-block; width: 20px; height: 12px; background: #252b45; margin-right: 5px;"></span>No Correlation (&lt;0.3)</div>';
+      html += '</div>';
+      
+      container.innerHTML = html;
+    }
+    
+    function displayAlphaBetaChart(data) {
+      if (!data || !data.data || data.data.length === 0 || data.sampleSize < 10) {
+        const ctx = document.getElementById('alphaBetaChart');
+        if (ctx) {
+          const chartCtx = ctx.getContext('2d');
+          if (alphaBetaChart) alphaBetaChart.destroy();
+        }
+        const statsDiv = document.getElementById('alphaBetaStats');
+        if (statsDiv) {
+          statsDiv.innerHTML = `<div style="color: #9e9e9e; text-align: center;">Not enough data (need at least 10 trades). Current sample: ${data?.sampleSize || 0}</div>`;
+        }
+        return;
+      }
+      
+      // Update statistics panel
+      const statsDiv = document.getElementById('alphaBetaStats');
+      if (statsDiv) {
+        statsDiv.innerHTML = `
+          <div>
+            <div style="color: #9e9e9e; font-size: 11px;">Overall Alpha</div>
+            <div style="color: ${data.overallAlpha >= 0 ? '#4caf50' : '#f44336'}; font-size: 18px; font-weight: bold;">${data.overallAlpha.toFixed(2)}%</div>
+            <div style="color: #9e9e9e; font-size: 10px;">${data.overallAlpha >= 0 ? '✅ Beating SOL' : '❌ Underperforming SOL'}</div>
+          </div>
+          <div>
+            <div style="color: #9e9e9e; font-size: 11px;">Overall Beta</div>
+            <div style="color: #9e9e9e; font-size: 18px; font-weight: bold;">${data.overallBeta.toFixed(2)}</div>
+            <div style="color: #9e9e9e; font-size: 10px;">${Math.abs(data.overallBeta) < 0.3 ? '✅ Low correlation' : Math.abs(data.overallBeta) > 0.7 ? '⚠️ High correlation' : 'Moderate correlation'}</div>
+          </div>
+          <div>
+            <div style="color: #9e9e9e; font-size: 11px;">Beta Slope</div>
+            <div style="color: #9e9e9e; font-size: 18px; font-weight: bold;">${data.overallBetaSlope.toFixed(2)}</div>
+            <div style="color: #9e9e9e; font-size: 10px;">${data.overallBetaSlope > 1 ? 'More volatile' : data.overallBetaSlope < 1 ? 'Less volatile' : 'Same as SOL'}</div>
+          </div>
+          <div>
+            <div style="color: #9e9e9e; font-size: 11px;">Sample Size</div>
+            <div style="color: #9e9e9e; font-size: 18px; font-weight: bold;">${data.sampleSize}</div>
+            <div style="color: #9e9e9e; font-size: 10px;">trades</div>
+          </div>
+        `;
+      }
+      
+      const ctx = document.getElementById('alphaBetaChart').getContext('2d');
+      if (alphaBetaChart) alphaBetaChart.destroy();
+      
+      alphaBetaChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.data.map(d => new Date(d.timestamp).toLocaleDateString()),
+          datasets: [
+            {
+              label: 'Alpha (%)',
+              data: data.data.map(d => d.avgAlpha),
+              borderColor: '#4caf50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              yAxisID: 'y-alpha'
+            },
+            {
+              label: 'Beta (Correlation)',
+              data: data.data.map(d => d.beta),
+              borderColor: '#ffd700',
+              backgroundColor: 'rgba(255, 215, 0, 0.1)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.4,
+              yAxisID: 'y-beta'
+            },
+            {
+              label: 'Zero Line (Alpha)',
+              data: data.data.map(() => 0),
+              borderColor: '#666',
+              borderWidth: 1,
+              borderDash: [2, 2],
+              pointRadius: 0,
+              fill: false,
+              yAxisID: 'y-alpha'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#9e9e9e' }
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  if (context.datasetIndex === 2) return null; // Skip zero line
+                  const index = context.dataIndex;
+                  const point = data.data[index];
+                  if (context.datasetIndex === 0) {
+                    return [
+                      `Alpha: ${point.avgAlpha.toFixed(2)}%`,
+                      `Cumulative Alpha: ${point.cumulativeAlpha.toFixed(2)}%`,
+                      `Window: ${point.windowSize} trades`
+                    ];
+                  } else {
+                    return [
+                      `Beta: ${point.beta.toFixed(3)}`,
+                      `Beta Slope: ${point.betaSlope.toFixed(2)}`,
+                      `Window: ${point.windowSize} trades`
+                    ];
+                  }
+                }
+              }
+            }
+          },
+          scales: {
+            'y-alpha': {
+              type: 'linear',
+              position: 'left',
+              ticks: { 
+                color: '#4caf50',
+                callback: function(value) {
+                  return value.toFixed(1) + '%';
+                }
+              },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Alpha (%) - Excess Return vs SOL',
+                color: '#4caf50'
+              }
+            },
+            'y-beta': {
+              type: 'linear',
+              position: 'right',
+              ticks: { 
+                color: '#ffd700',
+                callback: function(value) {
+                  return value.toFixed(2);
+                }
+              },
+              grid: { 
+                drawOnChartArea: false,
+                color: '#252b45'
+              },
+              title: {
+                display: true,
+                text: 'Beta (Correlation with SOL)',
+                color: '#ffd700'
+              },
+              min: -1,
+              max: 1
+            },
+            x: {
+              ticks: { color: '#9e9e9e' },
+              grid: { color: '#252b45' },
+              title: {
+                display: true,
+                text: 'Time',
+                color: '#9e9e9e'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function displayKellyCriterion(data) {
+      const container = document.getElementById('kellyCriterionContainer');
+      if (!container) return;
+      
+      if (!data || data.sampleSize < 10) {
+        container.innerHTML = `<div style="color: #9e9e9e; text-align: center; padding: 20px;">Not enough data (need at least 10 trades). Current sample: ${data?.sampleSize || 0}</div>`;
+        return;
+      }
+      
+      // Main calculator display
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+          <div style="background: #252b45; padding: 15px; border-radius: 8px;">
+            <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Kelly Criterion</div>
+            <div style="color: ${data.kellyPercent > 0 ? (data.kellyPercent > 50 ? '#f44336' : '#4caf50') : '#f44336'}; font-size: 32px; font-weight: bold;">${data.kellyPercent.toFixed(2)}%</div>
+            <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">Optimal position size</div>
+          </div>
+          
+          <div style="background: #252b45; padding: 15px; border-radius: 8px;">
+            <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Win Rate</div>
+            <div style="color: #9e9e9e; font-size: 24px; font-weight: bold;">${data.winRate.toFixed(1)}%</div>
+            <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">${data.winnersCount} wins / ${data.losersCount} losses</div>
+          </div>
+          
+          <div style="background: #252b45; padding: 15px; border-radius: 8px;">
+            <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Risk/Reward Ratio</div>
+            <div style="color: #9e9e9e; font-size: 24px; font-weight: bold;">${data.riskRewardRatio.toFixed(2)}</div>
+            <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">Avg Win: ${data.avgWin.toFixed(2)}% / Avg Loss: ${data.avgLoss.toFixed(2)}%</div>
+          </div>
+          
+          <div style="background: #252b45; padding: 15px; border-radius: 8px;">
+            <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Sample Size</div>
+            <div style="color: #9e9e9e; font-size: 24px; font-weight: bold;">${data.sampleSize}</div>
+            <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">trades analyzed</div>
+          </div>
+        </div>
+        
+        <div style="background: ${data.kellyPercent <= 0 ? 'rgba(244, 67, 54, 0.2)' : data.kellyPercent > 50 ? 'rgba(255, 193, 7, 0.2)' : 'rgba(76, 175, 80, 0.2)'}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid ${data.kellyPercent <= 0 ? '#f44336' : data.kellyPercent > 50 ? '#ffc107' : '#4caf50'};">
+          <div style="color: #fff; font-weight: bold; margin-bottom: 5px;">💡 Recommendation</div>
+          <div style="color: #9e9e9e; font-size: 14px;">${data.recommendation}</div>
+        </div>
+        
+        <div style="background: #252b45; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <div style="color: #fff; font-weight: bold; margin-bottom: 15px; font-size: 16px;">📈 Fractional Kelly (Safer Alternatives)</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+            <div style="text-align: center; padding: 15px; background: #1a1f2e; border-radius: 8px;">
+              <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Quarter Kelly (25%)</div>
+              <div style="color: #4caf50; font-size: 24px; font-weight: bold;">${data.fractionalKelly.quarter.toFixed(2)}%</div>
+              <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">Conservative</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: #1a1f2e; border-radius: 8px;">
+              <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Half Kelly (50%)</div>
+              <div style="color: #ffd700; font-size: 24px; font-weight: bold;">${data.fractionalKelly.half.toFixed(2)}%</div>
+              <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">Moderate</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: #1a1f2e; border-radius: 8px;">
+              <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Three-Quarter Kelly (75%)</div>
+              <div style="color: #ff9800; font-size: 24px; font-weight: bold;">${data.fractionalKelly.threeQuarter.toFixed(2)}%</div>
+              <div style="color: #9e9e9e; font-size: 10px; margin-top: 5px;">Aggressive</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: #252b45; padding: 20px; border-radius: 8px;">
+          <div style="color: #fff; font-weight: bold; margin-bottom: 15px; font-size: 16px;">📐 Formula Breakdown</div>
+          <div style="color: #9e9e9e; font-size: 14px; line-height: 1.8; font-family: 'Courier New', monospace;">
+            <div style="margin-bottom: 10px;"><strong>Kelly Formula:</strong> f* = (p × b - q) / b</div>
+            <div style="margin-bottom: 5px;">• <strong>p</strong> (Win Rate) = ${(data.formula.p * 100).toFixed(1)}% = ${data.formula.p.toFixed(3)}</div>
+            <div style="margin-bottom: 5px;">• <strong>q</strong> (Loss Rate) = ${(data.formula.q * 100).toFixed(1)}% = ${data.formula.q.toFixed(3)}</div>
+            <div style="margin-bottom: 5px;">• <strong>b</strong> (Risk/Reward) = ${data.formula.b.toFixed(2)} (Avg Win ${data.avgWin.toFixed(2)}% / Avg Loss ${data.avgLoss.toFixed(2)}%)</div>
+            <div style="margin-bottom: 10px;">• <strong>f*</strong> (Kelly %) = (${data.formula.p.toFixed(3)} × ${data.formula.b.toFixed(2)} - ${data.formula.q.toFixed(3)}) / ${data.formula.b.toFixed(2)} = <strong style="color: #4caf50;">${data.formula.kelly.toFixed(2)}%</strong></div>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #1a1f2e; color: #ffd700;">
+              <strong>💡 Interpretation:</strong> Bet ${data.kellyPercent.toFixed(2)}% of your capital per trade to maximize long-term growth. 
+              ${data.kellyPercent > 25 ? '⚠️ This is aggressive - consider using fractional Kelly (25-50%) for safety.' : 'This is a reasonable position size, but fractional Kelly (25-50%) is still recommended for extra safety.'}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+    }
+    
+    // Load data on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set default date range (last 24 hours)
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      document.getElementById('dateFrom').value = yesterday.toISOString().slice(0, 16);
+      document.getElementById('dateTo').value = now.toISOString().slice(0, 16);
+      
+      loadData(1);
+      
+      // Auto-reload when filters change (reset to page 1)
+      document.getElementById('pageSize').addEventListener('change', () => {
+        loadData(1); // Reset to first page when page size changes
+      });
+      
+      document.getElementById('flowStage').addEventListener('change', (e) => {
+        const selectedValue = e.target.value;
+        console.log('[Analytics] Flow stage changed to:', selectedValue);
+        loadData(1); // Reset to first page when flow stage changes
+      });
+      
+      document.getElementById('chain').addEventListener('change', () => {
+        loadData(1); // Reset to first page when chain changes
+      });
+      
+      document.getElementById('strategy').addEventListener('change', () => {
+        loadData(1); // Reset to first page when strategy changes
+      });
+      
+      // For text inputs, use debounce to avoid too many requests
+      let tokenAddressTimeout;
+      document.getElementById('tokenAddress').addEventListener('input', () => {
+        clearTimeout(tokenAddressTimeout);
+        tokenAddressTimeout = setTimeout(() => {
+          loadData(1);
+        }, 500); // Wait 500ms after user stops typing
+      });
+      
+      let scanIdTimeout;
+      document.getElementById('scanId').addEventListener('input', () => {
+        clearTimeout(scanIdTimeout);
+        scanIdTimeout = setTimeout(() => {
+          loadData(1);
+        }, 500);
+      });
+      
+      // Date changes should reload immediately
+      document.getElementById('dateFrom').addEventListener('change', () => {
+        loadData(1);
+      });
+      
+      document.getElementById('dateTo').addEventListener('change', () => {
+        loadData(1);
+      });
+      
+      // Price history modal - handle symbol clicks
+      let priceChart = null;
+      
+      // Candlestick modal - handle token address clicks
+      let candlestickChart = null;
+      document.addEventListener('click', async (e) => {
+        // Handle token address click for candlestick chart
+        if (e.target.classList.contains('token-address-clickable')) {
+          const tokenAddress = e.target.getAttribute('data-token');
+          const chain = e.target.getAttribute('data-chain');
+          const scanTimestamp = e.target.getAttribute('data-scan');
+          const symbol = e.target.getAttribute('data-symbol');
+          
+          // Show candlestick modal
+          const modal = document.getElementById('candlestickModal');
+          const modalTitle = document.getElementById('candlestickModalTitle');
+          modalTitle.textContent = `${symbol || 'Token'} Candlestick Chart`;
+          modal.classList.add('active');
+          
+          // Show loading
+          const chartContainer = document.getElementById('candlestickChartContainer');
+          chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">Loading candlestick data...</div>';
+          
+          try {
+            // Fetch pre-scan candles
+            const response = await fetch(`/api/pre-scan-candles/${encodeURIComponent(tokenAddress)}/${encodeURIComponent(chain)}/${encodeURIComponent(scanTimestamp)}?minutes=30`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to fetch candlestick data');
+            }
+            
+            if (!data.candles || data.candles.length === 0) {
+              chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">No candlestick data available for this token</div>';
+              return;
+            }
+            
+            // Destroy existing chart if any
+            if (candlestickChart) {
+              candlestickChart.destroy();
+              candlestickChart = null;
+            }
+            
+            // Prepare candlestick data
+            const candles = data.candles;
+            const labels = candles.map(c => new Date(c.timestamp).toLocaleTimeString());
+            
+            // Calculate stats
+            const firstCandle = candles[0];
+            const lastCandle = candles[candles.length - 1];
+            const priceChange = ((lastCandle.close - firstCandle.open) / firstCandle.open) * 100;
+            const priceChangeColor = priceChange >= 0 ? '#4caf50' : '#f44336';
+            
+            // Update chart container
+            chartContainer.innerHTML = `
+              <div style="margin-bottom: 15px; padding: 15px; background: #252b45; border-radius: 8px;">
+                <h3 style="color: #4fc3f7; margin-bottom: 15px; font-size: 18px;">📈 Price Action Before Discovery (30 min)</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">First Candle</div>
+                    <div style="color: #e0e0e0; font-size: 16px; font-weight: 600;">$${firstCandle.open.toFixed(6)}</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${new Date(firstCandle.timestamp).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">Last Candle</div>
+                    <div style="color: #e0e0e0; font-size: 16px; font-weight: 600;">$${lastCandle.close.toFixed(6)}</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${new Date(lastCandle.timestamp).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">Price Change</div>
+                    <div style="color: ${priceChangeColor}; font-size: 16px; font-weight: 600;">${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${candles.length} candles (5m)</div>
+                  </div>
+                </div>
+              </div>
+              <div style="height: 600px;">
+                <canvas id="candlestickChart"></canvas>
+              </div>
+            `;
+            
+            // Create candlestick chart using Chart.js with custom plugin for proper OHLC visualization
+            const ctx = document.getElementById('candlestickChart').getContext('2d');
+            const upColor = '#4caf50';
+            const downColor = '#f44336';
+            
+            // Create a base chart first (we'll draw candlesticks on top)
+            candlestickChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'Price',
+                  data: candles.map(c => c.close),
+                  borderColor: 'transparent',
+                  backgroundColor: 'transparent',
+                  pointRadius: 0
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                  legend: {
+                    display: false
+                  },
+                  tooltip: {
+                    callbacks: {
+                      title: function(context) {
+                        return new Date(candles[context[0].dataIndex].timestamp).toLocaleString();
+                      },
+                      label: function(context) {
+                        const idx = context.dataIndex;
+                        const candle = candles[idx];
+                        const change = ((candle.close - candle.open) / candle.open) * 100;
+                        return [
+                          `Open: $${candle.open.toFixed(6)}`,
+                          `High: $${candle.high.toFixed(6)}`,
+                          `Low: $${candle.low.toFixed(6)}`,
+                          `Close: $${candle.close.toFixed(6)}`,
+                          `Change: ${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+                          `Volume: $${candle.volume.toFixed(2)}`
+                        ];
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    ticks: { color: '#9e9e9e', maxRotation: 45 },
+                    grid: { color: '#1a1f2e' }
+                  },
+                  y: {
+                    ticks: { 
+                      color: '#9e9e9e', 
+                      callback: function(value) { 
+                        return '$' + value.toFixed(6); 
+                      } 
+                    },
+                    grid: { color: '#1a1f2e' }
+                  }
+                },
+                animation: {
+                  onComplete: function() {
+                    // Draw candlesticks after chart is rendered
+                    const chart = this;
+                    if (!chart || !chart.ctx || !chart.scales) return;
+                    
+                    const ctx = chart.ctx;
+                    const xScale = chart.scales.x;
+                    const yScale = chart.scales.y;
+                    const bodyWidth = 10;
+                    
+                    candles.forEach((candle, idx) => {
+                      const x = xScale.getPixelForValue(idx);
+                      const isUp = candle.close >= candle.open;
+                      const color = isUp ? upColor : downColor;
+                      
+                      const highY = yScale.getPixelForValue(candle.high);
+                      const lowY = yScale.getPixelForValue(candle.low);
+                      const openY = yScale.getPixelForValue(candle.open);
+                      const closeY = yScale.getPixelForValue(candle.close);
+                      
+                      const bodyTop = Math.min(openY, closeY);
+                      const bodyBottom = Math.max(openY, closeY);
+                      const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
+                      
+                      // Draw wick (high-low vertical line)
+                      ctx.strokeStyle = color;
+                      ctx.lineWidth = 1;
+                      ctx.beginPath();
+                      ctx.moveTo(x, highY);
+                      ctx.lineTo(x, lowY);
+                      ctx.stroke();
+                      
+                      // Draw body (open-close rectangle)
+                      ctx.fillStyle = color;
+                      ctx.fillRect(x - bodyWidth/2, bodyTop, bodyWidth, bodyHeight);
+                      ctx.strokeStyle = color;
+                      ctx.lineWidth = 1;
+                      ctx.strokeRect(x - bodyWidth/2, bodyTop, bodyWidth, bodyHeight);
+                    });
+                  }
+                }
+              }
+            });
+            
+          } catch (error) {
+            console.error('Error loading candlestick data:', error);
+            chartContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #f44336;">Error loading candlestick data: ${error.message}</div>`;
+          }
+        }
+        
+        // Handle copy token address
+        if (e.target.classList.contains('token-copy-icon')) {
+          const tokenAddress = e.target.getAttribute('data-token');
+          navigator.clipboard.writeText(tokenAddress).then(() => {
+            e.target.style.color = '#4caf50';
+            setTimeout(() => {
+              e.target.style.color = '#9e9e9e';
+            }, 1000);
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+          });
+        }
+        
+        // Handle symbol click for price history (existing functionality)
+        if (e.target.classList.contains('symbol-clickable')) {
+          const tokenAddress = e.target.getAttribute('data-token');
+          const chain = e.target.getAttribute('data-chain');
+          const scanTimestamp = e.target.getAttribute('data-scan');
+          const symbol = e.target.getAttribute('data-symbol');
+          
+          // Show modal
+          const modal = document.getElementById('priceHistoryModal');
+          const modalTitle = document.getElementById('priceHistoryModalTitle');
+          modalTitle.textContent = `${symbol} Price History`;
+          modal.classList.add('active');
+          
+          // Show loading
+          const chartContainer = document.getElementById('priceHistoryChartContainer');
+          chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">Loading price history...</div>';
+          
+          try {
+            // Fetch price history
+            const response = await fetch(`/api/price-history/${encodeURIComponent(tokenAddress)}?chain=${encodeURIComponent(chain)}&scanTimestamp=${encodeURIComponent(scanTimestamp)}`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to fetch price history');
+            }
+            
+            if (!data.prices || data.prices.length === 0) {
+              chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">No price history available for this token</div>';
+              return;
+            }
+            
+            // Destroy existing chart if any
+            if (priceChart) {
+              priceChart.destroy();
+              priceChart = null;
+            }
+            
+            // Filter to first hour only (from scan timestamp to +1 hour)
+            const scanTime = new Date(data.scanTimestamp);
+            const oneHourLater = new Date(scanTime.getTime() + 60 * 60 * 1000);
+            const filteredPrices = data.prices.filter(p => {
+              const priceTime = new Date(p.timestamp);
+              return priceTime >= scanTime && priceTime <= oneHourLater;
+            });
+            
+            if (filteredPrices.length === 0) {
+              chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #9e9e9e;">No price history available for the first hour</div>';
+              return;
+            }
+            
+            // Prepare chart data (first hour only)
+            const labels = filteredPrices.map(p => new Date(p.timestamp).toLocaleString());
+            const prices = filteredPrices.map(p => p.price_usd);
+            
+            // Backend already includes scan price as first point in prices array
+            // So prices[0] is the scan price (baseline)
+            const startPrice = prices[0]; // First price is scan price (included by backend)
+            const endPrice = prices[prices.length - 1];
+            const priceChange = ((endPrice - startPrice) / startPrice) * 100;
+            const priceChangeColor = priceChange >= 0 ? '#4caf50' : '#f44336';
+            
+            // Find peak price in first hour
+            const peakPrice = Math.max(...prices);
+            // Calculate peak gain from scan price (not from first price in history)
+            const peakGain = ((peakPrice - startPrice) / startPrice) * 100;
+            const peakIndex = prices.indexOf(peakPrice);
+            const peakTime = new Date(filteredPrices[peakIndex].timestamp);
+            
+            // Calculate actual duration
+            const actualDuration = (new Date(filteredPrices[filteredPrices.length - 1].timestamp).getTime() - scanTime.getTime()) / 1000 / 60;
+            const actualDurationText = actualDuration < 60 
+              ? `${actualDuration.toFixed(1)} minutes` 
+              : `${(actualDuration / 60).toFixed(2)} hours`;
+            
+            // Update chart container with stats and canvas
+            chartContainer.innerHTML = `
+              <div style="margin-bottom: 15px; padding: 15px; background: #252b45; border-radius: 8px;">
+                <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #3a3f5a;">
+                  <div style="color: #9e9e9e; font-size: 11px; margin-bottom: 5px;">Time Range</div>
+                  <div style="color: #e0e0e0; font-size: 13px;">
+                    ${scanTime.toLocaleString()} → ${new Date(filteredPrices[filteredPrices.length - 1].timestamp).toLocaleString()}
+                  </div>
+                  <div style="color: #9e9e9e; font-size: 11px; margin-top: 3px;">
+                    Duration: ${actualDurationText} | ${filteredPrices.length} data points
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">Scan Price (Baseline)</div>
+                    <div style="color: #e0e0e0; font-size: 18px; font-weight: 600;">$${startPrice.toFixed(6)}</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${scanTime.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">End Price</div>
+                    <div style="color: #e0e0e0; font-size: 18px; font-weight: 600;">$${endPrice.toFixed(6)}</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${new Date(filteredPrices[filteredPrices.length - 1].timestamp).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">Peak Price</div>
+                    <div style="color: #ffd700; font-size: 18px; font-weight: 600;">$${peakPrice.toFixed(6)}</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">${peakTime.toLocaleString()} (+${peakGain.toFixed(2)}%)</div>
+                  </div>
+                  <div>
+                    <div style="color: #9e9e9e; font-size: 12px;">Price Change</div>
+                    <div style="color: ${priceChangeColor}; font-size: 18px; font-weight: 600;">${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%</div>
+                    <div style="color: #9e9e9e; font-size: 11px;">Start → End</div>
+                  </div>
+                </div>
+              </div>
+              <div style="height: 600px;">
+                <canvas id="priceHistoryChart"></canvas>
+              </div>
+            `;
+            
+            // Recreate chart in new container
+            const newCtx = document.getElementById('priceHistoryChart').getContext('2d');
+            
+            // Store filteredPrices in a variable accessible to tooltip callbacks
+            const chartFilteredPrices = filteredPrices;
+            
+            priceChart = new Chart(newCtx, {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [{
+              label: 'Price (USD)',
+              data: prices,
+              borderColor: '#4fc3f7',
+              backgroundColor: 'rgba(79, 195, 247, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 4
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                  legend: {
+                    display: true,
+                    labels: {
+                      color: '#e0e0e0'
+                    }
+                  },
+                  tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                      title: function(context) {
+                        return new Date(chartFilteredPrices[context[0].dataIndex].timestamp).toLocaleString();
+                      },
+                      label: function(context) {
+                        const price = context.parsed.y;
+                        const priceStr = `Price: $${price.toFixed(6)}`;
+                        const firstPrice = context.dataset.data[0];
+                        const labels = [];
+                        
+                        labels.push(priceStr);
+                        
+                        // Calculate change from first point (scan price)
+                        const changeFromFirst = ((price - firstPrice) / firstPrice) * 100;
+                        const changeFromFirstStr = changeFromFirst >= 0 ? `+${changeFromFirst.toFixed(2)}%` : `${changeFromFirst.toFixed(2)}%`;
+                        labels.push(`Change vs start: ${changeFromFirstStr}`);
+                        
+                        // Calculate change from previous point
+                        if (context.dataIndex > 0) {
+                          const prevPrice = context.dataset.data[context.dataIndex - 1];
+                          const change = ((price - prevPrice) / prevPrice) * 100;
+                          const changeStr = change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`;
+                          labels.push(`Change vs prev: ${changeStr}`);
+                        }
+                        
+                        return labels;
+                      },
+                      labelColor: function(context) {
+                        if (context.dataIndex > 0) {
+                          const price = context.parsed.y;
+                          const prevPrice = context.dataset.data[context.dataIndex - 1];
+                          const change = ((price - prevPrice) / prevPrice) * 100;
+                          return {
+                            borderColor: change >= 0 ? '#4caf50' : '#f44336',
+                            backgroundColor: change >= 0 ? '#4caf50' : '#f44336'
+                          };
+                        }
+                        return {
+                          borderColor: '#4fc3f7',
+                          backgroundColor: '#4fc3f7'
+                        };
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      color: '#9e9e9e',
+                      maxRotation: 45,
+                      minRotation: 45
+                    },
+                    grid: {
+                      color: '#3a3f5a'
+                    }
+                  },
+                  y: {
+                    ticks: {
+                      color: '#9e9e9e',
+                      callback: function(value) {
+                        return '$' + value.toFixed(6);
+                      }
+                    },
+                    grid: {
+                      color: '#3a3f5a'
+                    }
+                  }
+                }
+              }
+            });
+            
+          } catch (error) {
+            console.error('Error loading price history:', error);
+            chartContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #f44336;">Error loading price history: ${error.message}</div>`;
+          }
+        }
+        
+        // Close modals
+        if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal-overlay')) {
+          if (e.target.closest('#priceHistoryModal') || e.target.classList.contains('modal-overlay')) {
+            document.getElementById('priceHistoryModal').classList.remove('active');
+            if (priceChart) {
+              priceChart.destroy();
+              priceChart = null;
+            }
+          }
+          if (e.target.closest('#candlestickModal') || e.target.classList.contains('modal-overlay')) {
+            document.getElementById('candlestickModal').classList.remove('active');
+            if (candlestickChart) {
+              candlestickChart.destroy();
+              candlestickChart = null;
+            }
+          }
+        }
+      });
+      
+      // Start auto-refresh if checkbox is checked (default: off)
+      // User can enable it manually
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+    });
+    
+    // Load strategies on page load
+    window.addEventListener('load', async () => {
+      await loadStrategies();
+    });
+  </script>
+  
+  <!-- Price History Modal -->
+  <div id="priceHistoryModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="priceHistoryModalTitle">Price History</h2>
+        <button class="modal-close">Close</button>
+      </div>
+      <div id="priceHistoryChartContainer">
+        <div style="text-align: center; padding: 40px; color: #9e9e9e;">Click on a symbol to view price history</div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="candlestickModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="candlestickModalTitle">Candlestick Chart</h2>
+        <button class="modal-close">Close</button>
+      </div>
+      <div id="candlestickChartContainer">
+        <div style="text-align: center; padding: 40px; color: #9e9e9e;">Click on a token address to view candlestick chart</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

@@ -1,0 +1,51 @@
+# Ignore development files
+node_modules/
+*.log
+bot.log
+
+# Ignore data files (database will be created fresh)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Ignore environment files (secrets)
+.env
+.env.*
+.env.yaml
+!env.example
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore documentation (not needed in runtime)
+*.md
+!README.md
+
+# Ignore test files
+test-*.ts
+*.test.ts
+*.spec.ts
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore build artifacts
+dist/
+build/
+coverage/
+
+# Ignore Docker files (meta)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+

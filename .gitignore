@@ -1,0 +1,53 @@
+# .gitignore for telbot
+
+# Environment files (NEVER COMMIT SECRETS!)
+.env
+.env.*
+.env.yaml
+!env.example
+
+# debug
+debug/
+
+# Dependencies
+node_modules/
+bun.lockb
+
+# Logs
+*.log
+logs/
+bot.log
+
+# Database (local development)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary
+tmp/
+temp/
+
+# Deployment env-vars files and wallets
+environment/
+*wallets*.csv

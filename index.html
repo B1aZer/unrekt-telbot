@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>unrekt.ai</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<canvas id="three-canvas"></canvas>
+
+<main class="container">
+  
+  <header class="header">
+    <div class="logo">UNREKT.AI</div>
+    <div class="header-actions">
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>LIVE</span>
+      </div>
+      <a class="social-icon" href="https://x.com/unrektai" target="_blank" rel="noopener noreferrer" aria-label="Unrekt on X">
+        <svg viewBox="0 0 1200 1227" aria-hidden="true">
+          <path fill="currentColor" d="M714.163 519.284 1160.89 0H1047.53L667.137 442.544 364.328 0H0L468.492 681.821 0 1226.37H113.37L515.165 761.602 835.67 1226.37H1200L714.137 519.284h.026ZM563.003 699.782l-59.63-84.288-345.44-488.996h148.958l278.794 394.68 59.63 84.288 366.713 519.33H862.07L563.003 699.808v-.026Z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>
+      <span class="line">
+        <span class="word" style="--delay: 1">Next-Gen</span>
+        <span class="word gradient" style="--delay: 2">AI</span>
+      </span>
+      <span class="line">
+        <span class="word gradient" style="--delay: 3">Meme</span>
+        <span class="word" style="--delay: 4">Trading</span>
+      </span>
+    </h1>
+    
+    <p class="subtitle">24/7 algorithmic strategies. No emotions. Pure data.</p>
+    
+    <div class="cta-row">
+      <a href="https://t.me/unrektaibot?start=site" class="cta">
+        <span>Meet the AI</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <footer class="stats">
+    <div class="stat">
+      <span class="stat-label">VOLUME TRADED</span>
+      <span class="stat-value">$<span class="counter" data-target="240000">0</span></span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">UPTIME</span>
+      <span class="stat-value"><span id="uptime">98.7</span>%</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">TOTAL TRADES</span>
+      <span class="stat-value"><span class="counter" data-target="10000">0</span>+</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">LOCAL TIME</span>
+      <span class="stat-value" id="time">00:00:00</span>
+    </div>
+  </footer>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/script.js"></script>
+</body>
+</html>
+
