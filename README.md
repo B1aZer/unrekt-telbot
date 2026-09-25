@@ -7,6 +7,14 @@ This is a code-only snapshot. Strategy parameters, trained models, backtests, re
 and deployment settings are not included, and every scoring weight defaults to a neutral 1. It shows
 how the system is built, not what it trades.
 
+## The story behind it
+
+This bot is the first half of an autonomous trading desk we ran from October 2025 to September 2026.
+It started with Claude picking tokens, which returned about nothing, moved to LightGBM models trained on
+the bot's own outcomes, and grew into a data lake and a set of strategies that made 100 SOL before we
+closed it. The full write-up, with every strategy's real result:
+[After 100 SOL in profit and ten months of work, we closed our autonomous trading desk](https://staysup.io/closing-the-desk).
+
 ## What it does
 
 1. **Scan.** Finds new tokens that retail trading bots are buying. It watches the fee accounts of BonkBot,
